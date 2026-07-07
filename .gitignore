@@ -39,3 +39,7 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# e2e artifacts
+/e2e/shots/
+/e2e/playbook-export.json
