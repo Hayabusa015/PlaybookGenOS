@@ -5,10 +5,6 @@ import type { PlayComment } from "@/lib/types";
 import { btnPrimary, input } from "@/lib/ui";
 import { useEffect, useState } from "react";
 
-/**
- * Suggestions thread on a play. Works with either a coach join code or a
- * read-only share code — that's how a youth staff sends feedback upstream.
- */
 export function Comments({
   code,
   playId,
@@ -53,21 +49,21 @@ export function Comments({
 
   return (
     <div>
-      <h3 className="mb-2 text-sm font-bold uppercase tracking-wide text-slate-400">
+      <h3 className="mb-2 text-sm font-bold uppercase tracking-wide text-neutral-400">
         Suggestions ({mine.length})
       </h3>
       <ul className="mb-3 space-y-2">
         {mine.map((c) => (
-          <li key={c.id} className="rounded-lg bg-slate-800/70 p-2.5 text-sm">
-            <span className="font-bold text-emerald-400">{c.coachName}</span>{" "}
-            <span className="text-xs text-slate-500">
+          <li key={c.id} className="rounded-lg bg-neutral-800/70 p-2.5 text-sm">
+            <span className="font-bold text-amber-400">{c.coachName}</span>{" "}
+            <span className="text-xs text-neutral-500">
               {new Date(c.createdAt).toLocaleDateString()}
             </span>
-            <p className="mt-0.5 whitespace-pre-wrap text-slate-200">{c.body}</p>
+            <p className="mt-0.5 whitespace-pre-wrap text-neutral-200">{c.body}</p>
           </li>
         ))}
         {mine.length === 0 && (
-          <li className="text-sm text-slate-500">
+          <li className="text-sm text-neutral-500">
             No suggestions yet — leave the first one.
           </li>
         )}

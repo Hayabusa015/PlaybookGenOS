@@ -10,9 +10,9 @@ export function SaveStatus({ state }: { state: SaveState }) {
     error: "⚠ Save failed — retrying",
   }[state];
   const color = {
-    saved: "text-emerald-400",
-    saving: "text-slate-400",
-    dirty: "text-slate-400",
+    saved: "text-amber-400",
+    saving: "text-neutral-400",
+    dirty: "text-neutral-400",
     error: "text-rose-400",
   }[state];
   return <span className={`text-xs font-medium ${color}`}>{text}</span>;

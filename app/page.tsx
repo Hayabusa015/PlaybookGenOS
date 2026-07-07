@@ -65,23 +65,23 @@ export default function Home() {
     <main className="mx-auto w-full max-w-3xl flex-1 px-4 py-10">
       <header className="mb-10 text-center">
         <h1 className="text-4xl font-black tracking-tight text-white">
-          🏈 Playbook<span className="text-emerald-400">Gen</span>
+          🏈 Playbook<span className="text-amber-400">Gen</span>
         </h1>
-        <p className="mt-2 text-slate-400">
+        <p className="mt-2 text-neutral-400">
           Draw plays, build your playbook, share it with every coach in your
           program — varsity down to youth.
         </p>
       </header>
 
       <div className={`${card} mx-auto mb-6 max-w-md p-4`}>
-        <label className="mb-1 block text-sm text-slate-400">Your name</label>
+        <label className="mb-1 block text-sm text-neutral-400">Your name</label>
         <input
           className={`${input} w-full`}
           placeholder="Coach Taylor"
           value={name}
           onChange={(e) => setName(e.target.value)}
         />
-        <p className="mt-1 text-xs text-slate-500">
+        <p className="mt-1 text-xs text-neutral-500">
           Shown on plays and suggestions you add. No account needed.
         </p>
       </div>
@@ -128,18 +128,18 @@ export default function Home() {
 
       {recent.length > 0 && (
         <section className="mt-10">
-          <h2 className="mb-3 text-sm font-bold uppercase tracking-wide text-slate-500">
+          <h2 className="mb-3 text-sm font-bold uppercase tracking-wide text-neutral-500">
             Your teams
           </h2>
           <ul className="space-y-2">
             {recent.map((t) => (
               <li key={t.joinCode} className={`${card} flex items-center gap-3 p-3`}>
                 <button
-                  className="flex-1 text-left font-semibold text-white hover:text-emerald-400"
+                  className="flex-1 text-left font-semibold text-white hover:text-amber-400"
                   onClick={() => router.push(`/t/${t.joinCode}`)}
                 >
                   {t.name}
-                  <span className="ml-2 text-xs font-normal text-slate-500">
+                  <span className="ml-2 text-xs font-normal text-neutral-500">
                     {t.joinCode}
                   </span>
                 </button>
@@ -158,9 +158,9 @@ export default function Home() {
         </section>
       )}
 
-      <footer className="mt-12 text-center text-xs text-slate-600">
+      <footer className="mt-12 text-center text-xs text-neutral-600">
         Got a share code from another program? Open{" "}
-        <span className="font-mono text-slate-500">/s/YOURCODE</span> or paste
+        <span className="font-mono text-neutral-500">/s/YOURCODE</span> or paste
         the link they sent you.
       </footer>
     </main>

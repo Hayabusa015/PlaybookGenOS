@@ -118,3 +118,30 @@ export const ROUTE_COLORS = [
   "#e879f9", // magenta
   "#fb923c", // orange
 ];
+
+export type PositionGroup = "ol" | "qb" | "rb" | "wr" | "dl" | "lb" | "db";
+
+const POSITION_GROUP_MAP: Record<string, PositionGroup> = {
+  LT: "ol", LG: "ol", C: "ol", RG: "ol", RT: "ol", LE: "ol", RE: "ol", TE: "wr",
+  QB: "qb",
+  RB: "rb", FB: "rb", HB: "rb",
+  WR: "wr", X: "wr", Z: "wr", Y: "wr", H: "wr", SE: "wr", FL: "wr",
+  DE: "dl", DT: "dl", NT: "dl", R: "dl", NG: "dl",
+  LB: "lb", MLB: "lb", ILB: "lb", OLB: "lb", W: "lb", M: "lb", S: "lb", SAM: "lb", WILL: "lb", MIKE: "lb",
+  CB: "db", FS: "db", SS: "db", DB: "db", NB: "db",
+};
+
+export const POSITION_COLORS: Record<PositionGroup, string> = {
+  ol: "#60a5fa",  // blue — offensive linemen
+  qb: "#facc15",  // gold — QB standout
+  rb: "#fb923c",  // orange — running backs
+  wr: "#4ade80",  // green — receivers & TE
+  dl: "#f87171",  // red — defensive linemen
+  lb: "#c084fc",  // purple — linebackers
+  db: "#22d3ee",  // cyan — defensive backs
+};
+
+export function getPositionColor(label: string): string {
+  const group = POSITION_GROUP_MAP[label.toUpperCase()];
+  return group ? POSITION_COLORS[group] : "#e5e5e5";
+}

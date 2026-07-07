@@ -20,7 +20,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" className="h-full antialiased">
-      <body className="flex min-h-full flex-col bg-slate-950 text-slate-100">
+      <body className="flex min-h-full flex-col bg-neutral-950 text-neutral-100">
         {children}
       </body>
     </html>

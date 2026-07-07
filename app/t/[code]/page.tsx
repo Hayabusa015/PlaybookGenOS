@@ -4,7 +4,7 @@ import { Field } from "@/components/field";
 import { Marker } from "@/components/marker";
 import { PlayDiagram } from "@/components/play-diagram";
 import { downloadPlaybook, rememberTeam, rpc } from "@/lib/api";
-import type { Formation, TeamBundle } from "@/lib/types";
+import type { Formation, Play, TeamBundle } from "@/lib/types";
 import { btnDanger, btnGhost, btnPrimary, card } from "@/lib/ui";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
@@ -37,6 +37,141 @@ function CopyChip({ label, value }: { label: string; value: string }) {
   );
 }
 
+function ChevronIcon({ open }: { open: boolean }) {
+  return (
+    <svg
+      className={`h-4 w-4 shrink-0 transition-transform ${open ? "rotate-90" : ""}`}
+      viewBox="0 0 20 20"
+      fill="currentColor"
+    >
+      <path
+        fillRule="evenodd"
+        d="M7.21 14.77a.75.75 0 01.02-1.06L11.168 10 7.23 6.29a.75.75 0 111.04-1.08l4.5 4.25a.75.75 0 010 1.08l-4.5 4.25a.75.75 0 01-1.06-.02z"
+        clipRule="evenodd"
+      />
+    </svg>
+  );
+}
+
+function SidebarSection({
+  side,
+  formations,
+  plays,
+  joinCode,
+  selectedId,
+  onSelect,
+}: {
+  side: "offense" | "defense";
+  formations: Formation[];
+  plays: Play[];
+  joinCode: string;
+  selectedId: string | null;
+  onSelect: (id: string, type: "formation" | "play") => void;
+}) {
+  const [open, setOpen] = useState(true);
+  const sideFormations = formations.filter((f) => f.side === side);
+
+  return (
+    <div>
+      <button
+        onClick={() => setOpen(!open)}
+        className="flex w-full items-center gap-1.5 py-1.5 text-sm font-bold uppercase tracking-wide text-neutral-300 hover:text-white"
+      >
+        <ChevronIcon open={open} />
+        {side === "offense" ? "Offense" : "Defense"} ({sideFormations.length})
+      </button>
+      {open && (
+        <div className="ml-2 border-l border-neutral-800 pl-2">
+          {sideFormations.map((f) => (
+            <FormationNode
+              key={f.id}
+              formation={f}
+              plays={plays.filter((p) => p.formationId === f.id)}
+              joinCode={joinCode}
+              selectedId={selectedId}
+              onSelect={onSelect}
+            />
+          ))}
+          <Link
+            href={`/t/${joinCode}/formation/new`}
+            className="block py-1 text-sm text-amber-400 hover:text-amber-300"
+          >
+            + New formation
+          </Link>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function FormationNode({
+  formation,
+  plays,
+  joinCode,
+  selectedId,
+  onSelect,
+}: {
+  formation: Formation;
+  plays: Play[];
+  joinCode: string;
+  selectedId: string | null;
+  onSelect: (id: string, type: "formation" | "play") => void;
+}) {
+  const [open, setOpen] = useState(true);
+  const isSelected = selectedId === formation.id;
+
+  return (
+    <div>
+      <div className="flex items-center gap-1">
+        <button
+          onClick={() => setOpen(!open)}
+          className="shrink-0 text-neutral-500 hover:text-neutral-300"
+        >
+          <ChevronIcon open={open} />
+        </button>
+        <button
+          onClick={() => onSelect(formation.id, "formation")}
+          className={`flex-1 truncate py-1 text-left text-sm font-semibold ${
+            isSelected
+              ? "text-amber-400"
+              : "text-neutral-200 hover:text-white"
+          }`}
+        >
+          {formation.name}
+          <span className="ml-1 text-xs font-normal text-neutral-500">
+            ({formation.playerCount})
+          </span>
+        </button>
+      </div>
+      {open && (
+        <div className="ml-5 border-l border-neutral-800 pl-2">
+          {plays.map((p) => (
+            <button
+              key={p.id}
+              onClick={() => onSelect(p.id, "play")}
+              className={`block w-full truncate py-0.5 text-left text-sm ${
+                selectedId === p.id
+                  ? "text-amber-400 font-semibold"
+                  : "text-neutral-400 hover:text-neutral-200"
+              }`}
+            >
+              {p.name}
+            </button>
+          ))}
+          {formation.side === "offense" && (
+            <Link
+              href={`/t/${joinCode}/play/new`}
+              className="block py-0.5 text-xs text-amber-400/70 hover:text-amber-400"
+            >
+              + New play
+            </Link>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
 export default function TeamDashboard() {
   const { code } = useParams<{ code: string }>();
   const joinCode = decodeURIComponent(code).toUpperCase();
@@ -44,8 +179,10 @@ export default function TeamDashboard() {
 
   const [bundle, setBundle] = useState<TeamBundle | null>(null);
   const [error, setError] = useState("");
-  const [tab, setTab] = useState<"plays" | "formations">("plays");
   const [importMsg, setImportMsg] = useState("");
+  const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [selectedType, setSelectedType] = useState<"formation" | "play">("play");
+  const [sidebarOpen, setSidebarOpen] = useState(true);
   const fileRef = useRef<HTMLInputElement>(null);
 
   const load = useCallback(() => {
@@ -67,12 +204,14 @@ export default function TeamDashboard() {
     )
       return;
     await rpc("deleteFormation", { joinCode, id });
+    if (selectedId === id) setSelectedId(null);
     load();
   };
 
   const deletePlay = async (id: string, name: string) => {
     if (!confirm(`Delete play "${name}"?`)) return;
     await rpc("deletePlay", { joinCode, id });
+    if (selectedId === id) setSelectedId(null);
     load();
   };
 
@@ -92,6 +231,11 @@ export default function TeamDashboard() {
     setTimeout(() => setImportMsg(""), 4000);
   };
 
+  const onSelect = (id: string, type: "formation" | "play") => {
+    setSelectedId(id);
+    setSelectedType(type);
+  };
+
   if (error)
     return (
       <main className="flex-1 px-4 py-16 text-center">
@@ -102,7 +246,7 @@ export default function TeamDashboard() {
       </main>
     );
   if (!bundle)
-    return <p className="flex-1 py-16 text-center text-slate-400">Loading…</p>;
+    return <p className="flex-1 py-16 text-center text-neutral-400">Loading…</p>;
 
   const { team, formations, plays, comments } = bundle;
   const shareUrl =
@@ -114,13 +258,17 @@ export default function TeamDashboard() {
   const formationName = (id: string) =>
     formations.find((f) => f.id === id)?.name ?? "?";
 
+  const selectedPlay = selectedType === "play" ? plays.find((p) => p.id === selectedId) : null;
+  const selectedFormation = selectedType === "formation" ? formations.find((f) => f.id === selectedId) : null;
+
   return (
-    <main className="mx-auto w-full max-w-6xl flex-1 px-4 py-6">
-      <div className="mb-6 flex flex-wrap items-center gap-3">
+    <main className="flex h-screen flex-col">
+      {/* top bar */}
+      <div className="flex flex-wrap items-center gap-3 border-b border-neutral-800 px-4 py-3">
         <Link href="/" className="text-2xl" title="Home">
           🏈
         </Link>
-        <h1 className="mr-auto text-2xl font-black text-white">{team.name}</h1>
+        <h1 className="mr-auto text-xl font-black text-white">{team.name}</h1>
         <CopyChip label="Coach code" value={team.joinCode} />
         <CopyChip label="Share (read-only)" value={shareUrl} />
         <Link href={`/t/${joinCode}/print`} className={btnGhost}>
@@ -144,129 +292,213 @@ export default function TeamDashboard() {
           }}
         />
       </div>
-      {importMsg && <p className="mb-4 text-sm text-emerald-400">{importMsg}</p>}
+      {importMsg && <p className="px-4 py-2 text-sm text-amber-400">{importMsg}</p>}
 
-      <div className="mb-5 flex gap-2">
-        {(["plays", "formations"] as const).map((t) => (
+      <div className="flex flex-1 overflow-hidden">
+        {/* sidebar */}
+        <aside
+          className={`flex shrink-0 flex-col border-r border-neutral-800 bg-neutral-950 transition-all ${
+            sidebarOpen ? "w-64" : "w-0"
+          } overflow-hidden`}
+        >
+          <div className="flex items-center justify-between border-b border-neutral-800 px-3 py-2">
+            <span className="text-sm font-bold uppercase tracking-wide text-neutral-400">
+              Playbook
+            </span>
+            <button
+              onClick={() => setSidebarOpen(false)}
+              className="text-neutral-500 hover:text-neutral-300"
+              title="Collapse sidebar"
+            >
+              ✕
+            </button>
+          </div>
+          <nav className="flex-1 overflow-y-auto p-3 space-y-2">
+            <SidebarSection
+              side="offense"
+              formations={formations}
+              plays={plays}
+              joinCode={joinCode}
+              selectedId={selectedId}
+              onSelect={onSelect}
+            />
+            <SidebarSection
+              side="defense"
+              formations={formations}
+              plays={plays}
+              joinCode={joinCode}
+              selectedId={selectedId}
+              onSelect={onSelect}
+            />
+          </nav>
+          <div className="border-t border-neutral-800 p-3 text-xs text-neutral-600">
+            {formations.length} formations · {plays.length} plays
+          </div>
+        </aside>
+
+        {/* collapse toggle when sidebar is closed */}
+        {!sidebarOpen && (
           <button
-            key={t}
-            onClick={() => setTab(t)}
-            className={`rounded-full px-4 py-1.5 text-sm font-bold capitalize ${
-              tab === t
-                ? "bg-emerald-500 text-emerald-950"
-                : "bg-slate-800 text-slate-300 hover:bg-slate-700"
-            }`}
+            onClick={() => setSidebarOpen(true)}
+            className="flex items-center border-r border-neutral-800 bg-neutral-900 px-2 text-neutral-400 hover:text-white"
+            title="Open sidebar"
           >
-            {t} ({t === "plays" ? plays.length : formations.length})
+            ▶
           </button>
-        ))}
-      </div>
+        )}
 
-      {tab === "plays" && (
-        <section className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          <Link
-            href={`/t/${joinCode}/play/new`}
-            className={`${card} flex min-h-40 items-center justify-center text-lg font-bold text-emerald-400 hover:border-emerald-600`}
-          >
-            + New play
-          </Link>
-          {plays.map((p) => {
-            const offense = formations.find((f) => f.id === p.formationId);
+        {/* main content area */}
+        <div className="flex-1 overflow-y-auto p-6">
+          {selectedPlay ? (() => {
+            const offense = formations.find((f) => f.id === selectedPlay.formationId);
+            if (!offense) return <p className="text-rose-400">Formation deleted.</p>;
             return (
-              <div key={p.id} className={`${card} overflow-hidden`}>
-                <Link href={`/t/${joinCode}/play/${p.id}`} className="block">
-                  {offense ? (
-                    <PlayDiagram
-                      offense={offense}
-                      defense={
-                        formations.find((f) => f.id === p.defenseFormationId) ??
-                        null
-                      }
-                      routes={p.routes}
-                      className="pointer-events-none rounded-b-none"
-                    />
-                  ) : (
-                    <div className="flex h-32 items-center justify-center text-slate-500">
-                      formation deleted
-                    </div>
-                  )}
-                </Link>
-                <div className="flex items-center gap-2 p-3">
-                  <div className="mr-auto">
-                    <Link
-                      href={`/t/${joinCode}/play/${p.id}`}
-                      className="font-bold text-white hover:text-emerald-400"
-                    >
-                      {p.name}
-                    </Link>
-                    <p className="text-xs text-slate-500">
-                      {formationName(p.formationId)}
-                      {p.createdBy && ` · ${p.createdBy}`}
-                      {commentCount(p.id) > 0 &&
-                        ` · 💬 ${commentCount(p.id)}`}
-                    </p>
-                  </div>
+              <div>
+                <div className="mb-4 flex items-center gap-3">
+                  <h2 className="text-xl font-bold text-white">{selectedPlay.name}</h2>
+                  <span className="text-sm text-neutral-500">{offense.name}</span>
+                  <Link
+                    href={`/t/${joinCode}/play/${selectedPlay.id}`}
+                    className={`${btnGhost} ml-auto`}
+                  >
+                    Edit play
+                  </Link>
                   <button
                     className={btnDanger}
-                    onClick={() => deletePlay(p.id, p.name)}
+                    onClick={() => deletePlay(selectedPlay.id, selectedPlay.name)}
                   >
-                    ✕
+                    Delete
                   </button>
                 </div>
+                <div className="max-w-3xl">
+                  <PlayDiagram
+                    offense={offense}
+                    defense={
+                      formations.find((f) => f.id === selectedPlay.defenseFormationId) ?? null
+                    }
+                    routes={selectedPlay.routes}
+                    className="shadow-lg"
+                  />
+                </div>
+                {selectedPlay.createdBy && (
+                  <p className="mt-3 text-sm text-neutral-500">
+                    Created by {selectedPlay.createdBy}
+                    {commentCount(selectedPlay.id) > 0 &&
+                      ` · 💬 ${commentCount(selectedPlay.id)} suggestions`}
+                  </p>
+                )}
               </div>
             );
-          })}
-          {plays.length === 0 && (
-            <div className="flex items-center text-sm text-slate-500 sm:col-span-1">
-              No plays yet — start with a formation, then draw your first play.
-            </div>
-          )}
-        </section>
-      )}
-
-      {tab === "formations" && (
-        <section className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          <Link
-            href={`/t/${joinCode}/formation/new`}
-            className={`${card} flex min-h-40 items-center justify-center text-lg font-bold text-emerald-400 hover:border-emerald-600`}
-          >
-            + New formation
-          </Link>
-          {formations.map((f) => (
-            <div key={f.id} className={`${card} overflow-hidden`}>
-              <Link href={`/t/${joinCode}/formation/${f.id}`} className="block">
-                <FormationThumb f={f} />
-              </Link>
-              <div className="flex items-center gap-2 p-3">
-                <div className="mr-auto">
-                  <Link
-                    href={`/t/${joinCode}/formation/${f.id}`}
-                    className="font-bold text-white hover:text-emerald-400"
-                  >
-                    {f.name}
-                  </Link>
-                  <p className="text-xs text-slate-500">
-                    {f.side} · {f.playerCount} players
-                  </p>
-                </div>
+          })() : selectedFormation ? (
+            <div>
+              <div className="mb-4 flex items-center gap-3">
+                <h2 className="text-xl font-bold text-white">{selectedFormation.name}</h2>
+                <span className="text-sm text-neutral-500">
+                  {selectedFormation.side} · {selectedFormation.playerCount} players
+                </span>
+                <Link
+                  href={`/t/${joinCode}/formation/${selectedFormation.id}`}
+                  className={`${btnGhost} ml-auto`}
+                >
+                  Edit formation
+                </Link>
                 <button
                   className={btnDanger}
-                  onClick={() => deleteFormation(f.id, f.name)}
+                  onClick={() => deleteFormation(selectedFormation.id, selectedFormation.name)}
                 >
-                  ✕
+                  Delete
                 </button>
               </div>
+              <div className="max-w-3xl">
+                <FormationThumb f={selectedFormation} />
+              </div>
+              {plays.filter((p) => p.formationId === selectedFormation.id).length > 0 && (
+                <div className="mt-6">
+                  <h3 className="mb-3 text-sm font-bold uppercase tracking-wide text-neutral-400">
+                    Plays using this formation
+                  </h3>
+                  <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+                    {plays
+                      .filter((p) => p.formationId === selectedFormation.id)
+                      .map((p) => (
+                        <button
+                          key={p.id}
+                          onClick={() => onSelect(p.id, "play")}
+                          className={`${card} overflow-hidden text-left hover:border-amber-600`}
+                        >
+                          <PlayDiagram
+                            offense={selectedFormation}
+                            defense={
+                              formations.find((f) => f.id === p.defenseFormationId) ?? null
+                            }
+                            routes={p.routes}
+                            className="pointer-events-none rounded-b-none"
+                          />
+                          <div className="p-3">
+                            <p className="font-bold text-white">{p.name}</p>
+                          </div>
+                        </button>
+                      ))}
+                  </div>
+                </div>
+              )}
             </div>
-          ))}
-        </section>
-      )}
-
-      <p className="mt-10 text-xs text-slate-600">
-        Coaches join with code <span className="font-mono">{team.joinCode}</span>{" "}
-        (full edit access). Send the read-only share link to your youth program
-        or players — they can view plays, run the animations, and leave
-        suggestions, but can&apos;t change anything.
-      </p>
+          ) : (
+            /* default: show all plays grid */
+            <div>
+              <h2 className="mb-4 text-lg font-bold text-white">
+                All plays ({plays.length})
+              </h2>
+              <section className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                <Link
+                  href={`/t/${joinCode}/play/new`}
+                  className={`${card} flex min-h-40 items-center justify-center text-lg font-bold text-amber-400 hover:border-amber-600`}
+                >
+                  + New play
+                </Link>
+                {plays.map((p) => {
+                  const offense = formations.find((f) => f.id === p.formationId);
+                  return (
+                    <button
+                      key={p.id}
+                      onClick={() => onSelect(p.id, "play")}
+                      className={`${card} overflow-hidden text-left hover:border-amber-600`}
+                    >
+                      {offense ? (
+                        <PlayDiagram
+                          offense={offense}
+                          defense={
+                            formations.find((f) => f.id === p.defenseFormationId) ?? null
+                          }
+                          routes={p.routes}
+                          className="pointer-events-none rounded-b-none"
+                        />
+                      ) : (
+                        <div className="flex h-32 items-center justify-center text-neutral-500">
+                          formation deleted
+                        </div>
+                      )}
+                      <div className="p-3">
+                        <p className="font-bold text-white">{p.name}</p>
+                        <p className="text-xs text-neutral-500">
+                          {formationName(p.formationId)}
+                          {p.createdBy && ` · ${p.createdBy}`}
+                          {commentCount(p.id) > 0 && ` · 💬 ${commentCount(p.id)}`}
+                        </p>
+                      </div>
+                    </button>
+                  );
+                })}
+                {plays.length === 0 && (
+                  <div className="flex items-center text-sm text-neutral-500 sm:col-span-1">
+                    No plays yet — start with a formation, then draw your first play.
+                  </div>
+                )}
+              </section>
+            </div>
+          )}
+        </div>
+      </div>
     </main>
   );
 }

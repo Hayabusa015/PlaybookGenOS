@@ -158,14 +158,14 @@ export function AnimatedPlay({
       <div className="absolute bottom-2 right-2 flex gap-2">
         <button
           onClick={anim.playing ? anim.reset : anim.run}
-          className="rounded-lg bg-slate-900/80 px-3 py-1.5 text-sm font-semibold text-white backdrop-blur hover:bg-slate-800"
+          className="rounded-lg bg-neutral-900/80 px-3 py-1.5 text-sm font-semibold text-white backdrop-blur hover:bg-neutral-800"
         >
           {anim.playing ? "■ Stop" : "▶ Run play"}
         </button>
         {anim.progress > 0 && !anim.playing && (
           <button
             onClick={anim.reset}
-            className="rounded-lg bg-slate-900/80 px-3 py-1.5 text-sm font-semibold text-white backdrop-blur hover:bg-slate-800"
+            className="rounded-lg bg-neutral-900/80 px-3 py-1.5 text-sm font-semibold text-white backdrop-blur hover:bg-neutral-800"
           >
             ↺ Reset
           </button>

@@ -47,8 +47,9 @@ const joinCode = decodeURIComponent(page.url().split("/t/")[1]);
 console.log("created team, join code:", joinCode);
 
 // ---------- 2. offensive formation ----------
-await page.getByRole("button", { name: /formations \(0\)/i }).click();
-await page.getByRole("link", { name: "+ New formation" }).click();
+// Sidebar shows Offense section with "+ New formation" link
+await page.getByText("+ New formation").first().click();
+await page.waitForURL(/\/formation\/new/);
 await page.getByPlaceholder("e.g. I-Form Right, 4-3 Base").fill("I-Form");
 await page.getByRole("button", { name: "⭘ Offense" }).click();
 await page.getByRole("button", { name: "11-man (varsity/JV)" }).click();
@@ -73,8 +74,10 @@ console.log("formation editor OK (drag + rename + autosave)");
 
 // ---------- 3. defensive formation ----------
 await page.getByRole("link", { name: "← Playbook" }).click();
-await page.getByRole("button", { name: /formations \(1\)/i }).click();
-await page.getByRole("link", { name: "+ New formation" }).click();
+await page.waitForURL(/\/t\//);
+// Click the "+ New formation" under Defense section
+await page.getByText("+ New formation").nth(1).click();
+await page.waitForURL(/\/formation\/new/);
 await page.getByPlaceholder("e.g. I-Form Right, 4-3 Base").fill("4-3 Base");
 await page.getByRole("button", { name: "✕ Defense" }).click();
 await page.getByRole("button", { name: "11-man (varsity/JV)" }).click();
@@ -85,7 +88,9 @@ console.log("defense formation created");
 
 // ---------- 4. new play ----------
 await page.getByRole("link", { name: "← Playbook" }).click();
-await page.getByRole("link", { name: "+ New play" }).click();
+await page.waitForURL(/\/t\//);
+await page.getByText("+ New play").first().click();
+await page.waitForURL(/\/play\/new/);
 await page.getByPlaceholder("e.g. Power Right, Smash Concept").fill("Power Right");
 await page.selectOption("select >> nth=0", { label: "I-Form (11)" });
 await page.selectOption("select >> nth=1", { label: "4-3 Base (11)" });

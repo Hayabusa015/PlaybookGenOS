@@ -1,12 +1,9 @@
 "use client";
 
+import { getPositionColor } from "@/lib/templates";
 import type { Side } from "@/lib/types";
 import type { PointerEvent as ReactPointerEvent } from "react";
 
-/**
- * A single X or O on the field. Offense = circle (center is the square),
- * defense = X glyph, matching classic coaching notation.
- */
 export function Marker({
   x,
   y,
@@ -28,7 +25,9 @@ export function Marker({
 }) {
   const r = 1.25;
   const interactive = Boolean(onPointerDown);
-  const stroke = ghost ? "#cbd5e1" : (color ?? "#f8fafc");
+  const posColor = getPositionColor(label);
+  const stroke = ghost ? "#6b7280" : (color ?? posColor);
+  const fill = ghost ? "#27272a" : "#1c1c1c";
   const opacity = ghost ? 0.45 : 1;
 
   return (
@@ -50,12 +49,12 @@ export function Marker({
               width={r * 2}
               height={r * 2}
               rx="0.2"
-              fill="#14532d"
+              fill={fill}
               stroke={stroke}
               strokeWidth="0.22"
             />
           ) : (
-            <circle r={r} fill="#14532d" stroke={stroke} strokeWidth="0.22" />
+            <circle r={r} fill={fill} stroke={stroke} strokeWidth="0.22" />
           )}
           <text
             textAnchor="middle"
@@ -84,7 +83,6 @@ export function Marker({
           </text>
         </>
       )}
-      {/* generous invisible hit target for fingers */}
       {interactive && <circle r={r + 0.6} fill="transparent" />}
     </g>
   );

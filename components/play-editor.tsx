@@ -149,13 +149,13 @@ export function PlayEditor({
 
   if (isNew && !play) {
     if (!bundle && !error)
-      return <p className="mt-8 text-center text-slate-400">Loading…</p>;
+      return <p className="mt-8 text-center text-neutral-400">Loading…</p>;
     const offenses = bundle?.formations.filter((f) => f.side === "offense") ?? [];
     const defenses = bundle?.formations.filter((f) => f.side === "defense") ?? [];
     if (offenses.length === 0)
       return (
         <div className={`${card} mx-auto mt-8 max-w-md p-6 text-center`}>
-          <p className="mb-4 text-slate-300">
+          <p className="mb-4 text-neutral-300">
             Plays are built on top of a formation — create an offensive
             formation first.
           </p>
@@ -167,14 +167,14 @@ export function PlayEditor({
     return (
       <div className={`${card} mx-auto mt-8 max-w-md p-6`}>
         <h2 className="mb-4 text-lg font-bold text-white">New play</h2>
-        <label className="mb-1 block text-sm text-slate-400">Play name</label>
+        <label className="mb-1 block text-sm text-neutral-400">Play name</label>
         <input
           className={`${input} mb-4 w-full`}
           placeholder="e.g. Power Right, Smash Concept"
           value={newName}
           onChange={(e) => setNewName(e.target.value)}
         />
-        <label className="mb-1 block text-sm text-slate-400">Offensive formation</label>
+        <label className="mb-1 block text-sm text-neutral-400">Offensive formation</label>
         <select
           className={`${input} mb-4 w-full`}
           value={newFormationId}
@@ -186,7 +186,7 @@ export function PlayEditor({
             </option>
           ))}
         </select>
-        <label className="mb-1 block text-sm text-slate-400">
+        <label className="mb-1 block text-sm text-neutral-400">
           Defensive look (optional, shown ghosted)
         </label>
         <select
@@ -211,7 +211,7 @@ export function PlayEditor({
 
   if (error) return <p className="mt-8 text-center text-rose-400">{error}</p>;
   if (!play || !bundle)
-    return <p className="mt-8 text-center text-slate-400">Loading…</p>;
+    return <p className="mt-8 text-center text-neutral-400">Loading…</p>;
   if (!offense)
     return (
       <p className="mt-8 text-center text-rose-400">
@@ -260,7 +260,7 @@ export function PlayEditor({
           <div className="mt-3 flex min-h-11 flex-wrap items-center gap-2">
             {selectedId && selectedRoute ? (
               <>
-                <span className="text-sm font-semibold text-slate-300">
+                <span className="text-sm font-semibold text-neutral-300">
                   {offense.players.find((p) => p.id === selectedId)?.label}:
                 </span>
                 {ROUTE_COLORS.map((c) => (
@@ -302,7 +302,7 @@ export function PlayEditor({
                   Clear
                 </button>
                 <button
-                  className={`${btnGhost} bg-emerald-700 hover:bg-emerald-600`}
+                  className={`${btnGhost} bg-amber-700 hover:bg-amber-600`}
                   onClick={() => setSelectedId(null)}
                 >
                   ✓ Done
@@ -339,7 +339,7 @@ export function PlayEditor({
                     </option>
                   ))}
                 </select>
-                <span className="text-sm text-slate-500">
+                <span className="text-sm text-neutral-500">
                   Tap a player, then tap the field to draw their route.
                 </span>
               </>
@@ -349,7 +349,7 @@ export function PlayEditor({
 
         {/* assignments panel */}
         <div className={`${card} h-fit p-4`}>
-          <h3 className="mb-3 text-sm font-bold uppercase tracking-wide text-slate-400">
+          <h3 className="mb-3 text-sm font-bold uppercase tracking-wide text-neutral-400">
             Assignments
           </h3>
           <ul className="space-y-2">
@@ -361,8 +361,8 @@ export function PlayEditor({
                     onClick={() => selectPlayer(p.id)}
                     className={`w-11 shrink-0 rounded-md px-1 py-1 text-center text-xs font-bold ${
                       p.id === selectedId
-                        ? "bg-emerald-600 text-white"
-                        : "bg-slate-800 text-slate-200 hover:bg-slate-700"
+                        ? "bg-amber-600 text-white"
+                        : "bg-neutral-800 text-neutral-200 hover:bg-neutral-700"
                     }`}
                     style={
                       r && r.path.length > 0 ? { color: r.color } : undefined
@@ -382,7 +382,7 @@ export function PlayEditor({
               );
             })}
           </ul>
-          <h3 className="mb-2 mt-5 text-sm font-bold uppercase tracking-wide text-slate-400">
+          <h3 className="mb-2 mt-5 text-sm font-bold uppercase tracking-wide text-neutral-400">
             Coaching notes
           </h3>
           <textarea

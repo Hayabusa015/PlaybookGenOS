@@ -41,7 +41,7 @@ export default function SharedPlaybook() {
       </main>
     );
   if (!bundle)
-    return <p className="flex-1 py-16 text-center text-slate-400">Loading…</p>;
+    return <p className="flex-1 py-16 text-center text-neutral-400">Loading…</p>;
 
   const { team, formations, plays, comments } = bundle;
   const selected = plays.find((p) => p.id === selectedId) ?? null;
@@ -75,7 +75,7 @@ export default function SharedPlaybook() {
               <button
                 key={p.id}
                 onClick={() => setSelectedId(p.id)}
-                className={`${card} overflow-hidden text-left hover:border-emerald-600`}
+                className={`${card} overflow-hidden text-left hover:border-amber-600`}
               >
                 {offense && (
                   <PlayDiagram
@@ -87,7 +87,7 @@ export default function SharedPlaybook() {
                 )}
                 <div className="p-3">
                   <p className="font-bold text-white">{p.name}</p>
-                  <p className="text-xs text-slate-500">
+                  <p className="text-xs text-neutral-500">
                     {offense?.name}
                     {comments.some((c) => c.playId === p.id) &&
                       ` · 💬 ${comments.filter((c) => c.playId === p.id).length}`}
@@ -97,7 +97,7 @@ export default function SharedPlaybook() {
             );
           })}
           {plays.length === 0 && (
-            <p className="text-slate-500">This playbook has no plays yet.</p>
+            <p className="text-neutral-500">This playbook has no plays yet.</p>
           )}
         </section>
       ) : (
@@ -110,7 +110,7 @@ export default function SharedPlaybook() {
               <div>
                 <h2 className="mb-3 text-xl font-bold text-white">
                   {selected.name}
-                  <span className="ml-2 text-sm font-normal text-slate-500">
+                  <span className="ml-2 text-sm font-normal text-neutral-500">
                     {offense.name}
                   </span>
                 </h2>
@@ -122,10 +122,10 @@ export default function SharedPlaybook() {
                 />
                 {selected.notes && (
                   <div className={`${card} mt-4 p-4`}>
-                    <h3 className="mb-1 text-sm font-bold uppercase tracking-wide text-slate-400">
+                    <h3 className="mb-1 text-sm font-bold uppercase tracking-wide text-neutral-400">
                       Coaching notes
                     </h3>
-                    <p className="whitespace-pre-wrap text-sm text-slate-200">
+                    <p className="whitespace-pre-wrap text-sm text-neutral-200">
                       {selected.notes}
                     </p>
                   </div>
@@ -133,7 +133,7 @@ export default function SharedPlaybook() {
               </div>
               <div className="space-y-5">
                 <div className={`${card} p-4`}>
-                  <h3 className="mb-2 text-sm font-bold uppercase tracking-wide text-slate-400">
+                  <h3 className="mb-2 text-sm font-bold uppercase tracking-wide text-neutral-400">
                     Assignments
                   </h3>
                   <AssignmentList offense={offense} play={selected} />

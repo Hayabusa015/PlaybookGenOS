@@ -132,32 +132,32 @@ export function FormationEditor({
     return (
       <div className={`${card} mx-auto mt-8 max-w-md p-6`}>
         <h2 className="mb-4 text-lg font-bold text-white">New formation</h2>
-        <label className="mb-1 block text-sm text-slate-400">Name</label>
+        <label className="mb-1 block text-sm text-neutral-400">Name</label>
         <input
           className={`${input} mb-4 w-full`}
           placeholder="e.g. I-Form Right, 4-3 Base"
           value={newName}
           onChange={(e) => setNewName(e.target.value)}
         />
-        <label className="mb-1 block text-sm text-slate-400">Side of the ball</label>
+        <label className="mb-1 block text-sm text-neutral-400">Side of the ball</label>
         <div className="mb-4 flex gap-2">
           {(["offense", "defense"] as const).map((s) => (
             <button
               key={s}
               onClick={() => setNewSide(s)}
-              className={`${btnGhost} flex-1 ${newSide === s ? "ring-2 ring-emerald-500" : ""}`}
+              className={`${btnGhost} flex-1 ${newSide === s ? "ring-2 ring-amber-500" : ""}`}
             >
               {s === "offense" ? "⭘ Offense" : "✕ Defense"}
             </button>
           ))}
         </div>
-        <label className="mb-1 block text-sm text-slate-400">Players per side</label>
+        <label className="mb-1 block text-sm text-neutral-400">Players per side</label>
         <div className="mb-6 grid grid-cols-2 gap-2">
           {PLAYER_COUNTS.map((c) => (
             <button
               key={c}
               onClick={() => setNewCount(c)}
-              className={`${btnGhost} ${newCount === c ? "ring-2 ring-emerald-500" : ""}`}
+              className={`${btnGhost} ${newCount === c ? "ring-2 ring-amber-500" : ""}`}
             >
               {COUNT_LABELS[c]}
             </button>
@@ -172,7 +172,7 @@ export function FormationEditor({
   }
 
   if (error) return <p className="mt-8 text-center text-rose-400">{error}</p>;
-  if (!formation) return <p className="mt-8 text-center text-slate-400">Loading…</p>;
+  if (!formation) return <p className="mt-8 text-center text-neutral-400">Loading…</p>;
 
   return (
     <div className="mx-auto max-w-4xl">
@@ -206,7 +206,7 @@ export function FormationEditor({
       <div className="mt-3 flex flex-wrap items-center gap-3">
         {selected ? (
           <>
-            <span className="text-sm text-slate-400">Position label:</span>
+            <span className="text-sm text-neutral-400">Position label:</span>
             <input
               className={`${input} w-24 text-center font-bold uppercase`}
               value={selected.label}
@@ -227,7 +227,7 @@ export function FormationEditor({
             </button>
           </>
         ) : (
-          <p className="text-sm text-slate-500">
+          <p className="text-sm text-neutral-500">
             Drag players into position. Tap a player to rename their spot (QB, X, MIKE…).
           </p>
         )}

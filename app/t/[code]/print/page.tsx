@@ -23,7 +23,7 @@ export default function PrintPlaybook() {
 
   if (error) return <p className="py-16 text-center text-rose-400">{error}</p>;
   if (!bundle)
-    return <p className="py-16 text-center text-slate-400">Loading…</p>;
+    return <p className="py-16 text-center text-neutral-400">Loading…</p>;
 
   const { team, formations, plays } = bundle;
 

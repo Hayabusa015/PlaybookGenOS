@@ -19,7 +19,6 @@ export function fieldPoint(
 }
 
 const YARD_LINES = [4, 9, 14, 19, 29, 34, 39];
-// High-school hash marks sit 17.78 yd in from each sideline.
 const HASH_X = [17.78, FIELD_W - 17.78];
 
 export function Field({
@@ -44,8 +43,7 @@ export function Field({
           : undefined
       }
     >
-      <rect x="0" y="0" width={FIELD_W} height={FIELD_H} fill="#14532d" />
-      {/* alternating 5-yard mow stripes */}
+      <rect x="0" y="0" width={FIELD_W} height={FIELD_H} fill="#1a3a1a" />
       {[0, 2, 4, 6].map((i) => (
         <rect
           key={i}
@@ -53,7 +51,7 @@ export function Field({
           y={4 + i * 5}
           width={FIELD_W}
           height="5"
-          fill="#166534"
+          fill="#1f4d1f"
           opacity="0.55"
         />
       ))}
@@ -64,20 +62,18 @@ export function Field({
           x2={FIELD_W - 0.4}
           y1={y}
           y2={y}
-          stroke="#f0fdf4"
+          stroke="#d4d4d4"
           strokeWidth="0.14"
-          opacity="0.5"
+          opacity="0.4"
         />
       ))}
-      {/* hash marks every yard */}
       {HASH_X.map((hx) => (
-        <g key={hx} stroke="#f0fdf4" strokeWidth="0.1" opacity="0.4">
+        <g key={hx} stroke="#d4d4d4" strokeWidth="0.1" opacity="0.3">
           {Array.from({ length: FIELD_H - 1 }, (_, i) => i + 1).map((y) => (
             <line key={y} x1={hx - 0.4} x2={hx + 0.4} y1={y} y2={y} />
           ))}
         </g>
       ))}
-      {/* line of scrimmage */}
       <line
         x1="0.4"
         x2={FIELD_W - 0.4}
@@ -87,16 +83,15 @@ export function Field({
         strokeWidth="0.22"
         opacity="0.9"
       />
-      {/* sidelines */}
       <rect
         x="0.2"
         y="0.2"
         width={FIELD_W - 0.4}
         height={FIELD_H - 0.4}
         fill="none"
-        stroke="#f0fdf4"
+        stroke="#d4d4d4"
         strokeWidth="0.3"
-        opacity="0.85"
+        opacity="0.6"
       />
       {children}
     </svg>
