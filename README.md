@@ -1,4 +1,4 @@
-# 🏈 PlaybookGen
+# 🏈 PlaybookGenOS
 
 Design American-football formations and plays in the browser, build a team
 playbook, and share it with every coach in your program — from the varsity

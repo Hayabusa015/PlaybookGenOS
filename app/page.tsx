@@ -113,6 +113,7 @@ export default function Home() {
       <header className="mb-8 text-center">
         <h1 className="text-4xl font-black tracking-tight text-white sm:text-5xl">
           🏈 Playbook<span className="text-amber-400">Gen</span>
+          <span className="text-neutral-500">OS</span>
         </h1>
         <p className="mx-auto mt-3 max-w-xl text-neutral-400">
           Draw plays, build your playbook, share it with every coach in your

@@ -2,7 +2,7 @@ import type { Metadata, Viewport } from "next";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "PlaybookGen — Football Play Designer",
+  title: "PlaybookGenOS — Football Play Designer",
   description:
     "Draw football formations and plays, build a playbook, and share it with every coach in your program.",
 };
