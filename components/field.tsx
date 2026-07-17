@@ -78,6 +78,33 @@ export function Field({
           ))}
         </g>
       ))}
+      {/* yard numbers, measured from the line of scrimmage */}
+      {[
+        [14, "10"],
+        [4, "20"],
+        [34, "10"],
+      ].map(([y, n]) => (
+        <g
+          key={y}
+          fill="#a8a8a8"
+          fontSize="1.7"
+          fontWeight="700"
+          opacity="0.8"
+          style={{ fontFamily: "inherit" }}
+        >
+          <text x="3.4" y={y as number} dominantBaseline="central" textAnchor="middle">
+            {n}
+          </text>
+          <text
+            x={FIELD_W - 3.4}
+            y={y as number}
+            dominantBaseline="central"
+            textAnchor="middle"
+          >
+            {n}
+          </text>
+        </g>
+      ))}
       {/* line of scrimmage */}
       <line
         x1="0.4"
@@ -88,6 +115,14 @@ export function Field({
         strokeWidth="0.24"
         opacity="0.7"
       />
+      {/* ball at the snap point */}
+      <g transform={`translate(${FIELD_W / 2} ${LOS_Y})`}>
+        <ellipse rx="0.62" ry="0.4" fill="#8b5e34" stroke="#6f4a26" strokeWidth="0.08" />
+        <line x1="-0.28" x2="0.28" y1="0" y2="0" stroke="#f5f0e8" strokeWidth="0.09" />
+        {[-0.16, 0, 0.16].map((lx) => (
+          <line key={lx} x1={lx} x2={lx} y1="-0.11" y2="0.11" stroke="#f5f0e8" strokeWidth="0.07" />
+        ))}
+      </g>
       {/* sideline border */}
       <rect
         x="0.2"

@@ -1,5 +1,6 @@
 "use client";
 
+import { fieldPoint } from "./field";
 import { PlayDiagram, usePlayAnimation } from "./play-diagram";
 import { SaveStatus, type SaveState } from "./save-status";
 import { getCoachName, rpc } from "@/lib/api";
@@ -61,7 +62,9 @@ export function PlayEditor({
       .catch((e) => setError(e.message));
   }, [joinCode, playId, isNew]);
 
-  // Debounced autosave.
+  // Debounced autosave, with a flush on unmount so fast navigation
+  // never drops the last edit.
+  const unsaved = useRef<Play | null>(null);
   useEffect(() => {
     if (!play) return;
     if (!loaded.current) {
@@ -69,14 +72,22 @@ export function PlayEditor({
       return;
     }
     setSaveState("dirty");
+    unsaved.current = play;
     const t = setTimeout(() => {
       setSaveState("saving");
+      unsaved.current = null;
       rpc("savePlay", { joinCode, play })
         .then(() => setSaveState("saved"))
         .catch(() => setSaveState("error"));
     }, 700);
     return () => clearTimeout(t);
   }, [play, joinCode]);
+  useEffect(
+    () => () => {
+      if (unsaved.current) rpc("savePlay", { joinCode, play: unsaved.current });
+    },
+    [joinCode],
+  );
 
   const offense =
     bundle && play
@@ -141,6 +152,37 @@ export function PlayEditor({
     if (!selectedId || !play || anim.playing) return;
     const route = play.routes[selectedId];
     updateRoute(selectedId, { path: [...(route?.path ?? []), p] });
+  };
+
+  // Drag an existing route point to reshape the route.
+  const onHandleDown = (
+    playerId: string,
+    idx: number,
+    e: { stopPropagation(): void },
+  ) => {
+    e.stopPropagation();
+    const move = (ev: PointerEvent) => {
+      if (!svgRef.current) return;
+      const pt = fieldPoint(svgRef.current, ev);
+      setPlay((pl) => {
+        if (!pl) return pl;
+        const r = pl.routes[playerId];
+        if (!r) return pl;
+        return {
+          ...pl,
+          routes: {
+            ...pl.routes,
+            [playerId]: { ...r, path: r.path.map((q, i) => (i === idx ? pt : q)) },
+          },
+        };
+      });
+    };
+    const up = () => {
+      window.removeEventListener("pointermove", move);
+      window.removeEventListener("pointerup", up);
+    };
+    window.addEventListener("pointermove", move);
+    window.addEventListener("pointerup", up);
   };
 
   const selectedRoute = selectedId && play ? play.routes[selectedId] : null;
@@ -253,6 +295,7 @@ export function PlayEditor({
               selectPlayer(id);
             }}
             onFieldPointerDown={onFieldTap}
+            onHandleDown={onHandleDown}
             className="shadow-lg"
           />
 
@@ -340,7 +383,8 @@ export function PlayEditor({
                   ))}
                 </select>
                 <span className="text-sm text-neutral-500">
-                  Tap a player, then tap the field to draw their route.
+                  Tap a player, then tap the field to draw their route. Drag the
+                  dots to reshape it.
                 </span>
               </>
             )}

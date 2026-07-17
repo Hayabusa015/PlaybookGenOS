@@ -75,6 +75,7 @@ export function PlayDiagram({
   showHandles = false,
   onMarkerDown,
   onFieldPointerDown,
+  onHandleDown,
   svgRef,
   className,
 }: {
@@ -86,6 +87,11 @@ export function PlayDiagram({
   showHandles?: boolean;
   onMarkerDown?: (playerId: string, e: ReactPointerEvent<SVGGElement>) => void;
   onFieldPointerDown?: (p: Pt, e: ReactPointerEvent<SVGSVGElement>) => void;
+  onHandleDown?: (
+    playerId: string,
+    pointIndex: number,
+    e: ReactPointerEvent<SVGGElement>,
+  ) => void;
   svgRef?: RefObject<SVGSVGElement | null>;
   className?: string;
 }) {
@@ -108,6 +114,9 @@ export function PlayDiagram({
             endStyle={route.endStyle}
             dim={progress > 0}
             showHandles={showHandles && p.id === selectedId}
+            onHandleDown={
+              onHandleDown ? (i, e) => onHandleDown(p.id, i, e) : undefined
+            }
           />
         );
       })}

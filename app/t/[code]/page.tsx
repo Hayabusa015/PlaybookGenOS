@@ -131,10 +131,10 @@ function FormationNode({
         </button>
         <button
           onClick={() => onSelect(formation.id, "formation")}
-          className={`flex-1 truncate py-1 text-left text-sm font-semibold ${
+          className={`flex-1 truncate rounded-md px-1.5 py-1 text-left text-sm font-semibold transition-colors ${
             isSelected
-              ? "text-amber-400"
-              : "text-neutral-200 hover:text-white"
+              ? "bg-amber-500/15 text-amber-300"
+              : "text-neutral-200 hover:bg-neutral-800/70 hover:text-white"
           }`}
         >
           {formation.name}
@@ -149,10 +149,10 @@ function FormationNode({
             <button
               key={p.id}
               onClick={() => onSelect(p.id, "play")}
-              className={`block w-full truncate py-0.5 text-left text-sm ${
+              className={`block w-full truncate rounded-md px-1.5 py-0.5 text-left text-sm transition-colors ${
                 selectedId === p.id
-                  ? "text-amber-400 font-semibold"
-                  : "text-neutral-400 hover:text-neutral-200"
+                  ? "bg-amber-500/15 font-semibold text-amber-300"
+                  : "text-neutral-400 hover:bg-neutral-800/70 hover:text-neutral-200"
               }`}
             >
               {p.name}
@@ -197,6 +197,7 @@ export default function TeamDashboard() {
   const [selectedType, setSelectedType] = useState<"formation" | "play">("play");
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [moreOpen, setMoreOpen] = useState(false);
+  const [filter, setFilter] = useState("");
   const fileRef = useRef<HTMLInputElement>(null);
   const moreRef = useRef<HTMLDivElement>(null);
 
@@ -241,6 +242,33 @@ export default function TeamDashboard() {
     if (!confirm(`Delete play "${name}"?`)) return;
     await rpc("deletePlay", { joinCode, id });
     if (selectedId === id) setSelectedId(null);
+    load();
+  };
+
+  const duplicatePlay = async (p: Play) => {
+    const copy: Play = {
+      ...p,
+      id: crypto.randomUUID(),
+      name: `${p.name} copy`,
+      createdAt: new Date().toISOString(),
+    };
+    await rpc("savePlay", { joinCode, play: copy });
+    setSelectedId(copy.id);
+    setSelectedType("play");
+    load();
+  };
+
+  const duplicateFormation = async (f: Formation) => {
+    const copy: Formation = {
+      ...f,
+      id: crypto.randomUUID(),
+      name: `${f.name} copy`,
+      players: f.players.map((pl) => ({ ...pl, id: crypto.randomUUID() })),
+      createdAt: new Date().toISOString(),
+    };
+    await rpc("saveFormation", { joinCode, formation: copy });
+    setSelectedId(copy.id);
+    setSelectedType("formation");
     load();
   };
 
@@ -290,6 +318,18 @@ export default function TeamDashboard() {
 
   const selectedPlay = selectedType === "play" ? plays.find((p) => p.id === selectedId) : null;
   const selectedFormation = selectedType === "formation" ? formations.find((f) => f.id === selectedId) : null;
+
+  // Sidebar quick-filter: match play names; keep formations that match by
+  // name or still contain a matching play.
+  const q = filter.trim().toLowerCase();
+  const navPlays = q ? plays.filter((p) => p.name.toLowerCase().includes(q)) : plays;
+  const navFormations = q
+    ? formations.filter(
+        (f) =>
+          f.name.toLowerCase().includes(q) ||
+          navPlays.some((p) => p.formationId === f.id),
+      )
+    : formations;
 
   return (
     <main className="flex h-screen flex-col">
@@ -415,19 +455,27 @@ export default function TeamDashboard() {
               ✕
             </button>
           </div>
+          <div className="px-3 pt-3">
+            <input
+              className="w-full rounded-lg border border-neutral-800 bg-neutral-900 px-2.5 py-1.5 text-sm text-neutral-200 placeholder-neutral-600 outline-none focus:border-amber-500/60"
+              placeholder="Filter plays…"
+              value={filter}
+              onChange={(e) => setFilter(e.target.value)}
+            />
+          </div>
           <nav className="flex-1 overflow-y-auto p-3 space-y-2">
             <SidebarSection
               side="offense"
-              formations={formations}
-              plays={plays}
+              formations={navFormations}
+              plays={navPlays}
               joinCode={joinCode}
               selectedId={selectedId}
               onSelect={onSelect}
             />
             <SidebarSection
               side="defense"
-              formations={formations}
-              plays={plays}
+              formations={navFormations}
+              plays={navPlays}
               joinCode={joinCode}
               selectedId={selectedId}
               onSelect={onSelect}
@@ -459,13 +507,20 @@ export default function TeamDashboard() {
                 <div className="mb-4 flex flex-wrap items-center gap-2 md:gap-3">
                   <h2 className="text-lg font-bold text-white md:text-xl">{selectedPlay.name}</h2>
                   <span className="text-sm text-neutral-500">{offense.name}</span>
-                  <div className="ml-auto flex gap-2">
+                  <div className="ml-auto flex flex-wrap gap-2">
                     <Link
                       href={`/t/${joinCode}/play/${selectedPlay.id}`}
                       className={btnGhost}
                     >
                       Edit play
                     </Link>
+                    <button
+                      className={btnGhost}
+                      onClick={() => duplicatePlay(selectedPlay)}
+                      title="Make a copy of this play"
+                    >
+                      ⧉ Duplicate
+                    </button>
                     <button
                       className={btnDanger}
                       onClick={() => deletePlay(selectedPlay.id, selectedPlay.name)}
@@ -500,13 +555,20 @@ export default function TeamDashboard() {
                 <span className="text-sm text-neutral-500">
                   {selectedFormation.side} · {selectedFormation.playerCount} players
                 </span>
-                <div className="ml-auto flex gap-2">
+                <div className="ml-auto flex flex-wrap gap-2">
                   <Link
                     href={`/t/${joinCode}/formation/${selectedFormation.id}`}
                     className={btnGhost}
                   >
                     Edit formation
                   </Link>
+                  <button
+                    className={btnGhost}
+                    onClick={() => duplicateFormation(selectedFormation)}
+                    title="Make a copy of this formation"
+                  >
+                    ⧉ Duplicate
+                  </button>
                   <button
                     className={btnDanger}
                     onClick={() => deleteFormation(selectedFormation.id, selectedFormation.name)}
@@ -530,7 +592,7 @@ export default function TeamDashboard() {
                         <button
                           key={p.id}
                           onClick={() => onSelect(p.id, "play")}
-                          className={`${card} overflow-hidden text-left hover:border-amber-600`}
+                          className={`${card} group overflow-hidden text-left transition-all hover:-translate-y-0.5 hover:border-amber-500/60 hover:shadow-lg hover:shadow-black/50`}
                         >
                           <PlayDiagram
                             offense={selectedFormation}
@@ -541,7 +603,9 @@ export default function TeamDashboard() {
                             className="pointer-events-none rounded-b-none"
                           />
                           <div className="p-3">
-                            <p className="font-bold text-white">{p.name}</p>
+                            <p className="font-bold text-white group-hover:text-amber-300">
+                              {p.name}
+                            </p>
                           </div>
                         </button>
                       ))}
@@ -558,7 +622,7 @@ export default function TeamDashboard() {
               <section className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
                 <Link
                   href={`/t/${joinCode}/play/new`}
-                  className={`${card} flex min-h-40 items-center justify-center text-lg font-bold text-amber-400 hover:border-amber-600`}
+                  className="flex min-h-40 items-center justify-center rounded-xl border-2 border-dashed border-neutral-800 text-lg font-bold text-amber-400 transition-colors hover:border-amber-500/60 hover:bg-neutral-900/60"
                 >
                   + New play
                 </Link>
@@ -568,7 +632,7 @@ export default function TeamDashboard() {
                     <button
                       key={p.id}
                       onClick={() => onSelect(p.id, "play")}
-                      className={`${card} overflow-hidden text-left hover:border-amber-600`}
+                      className={`${card} group overflow-hidden text-left transition-all hover:-translate-y-0.5 hover:border-amber-500/60 hover:shadow-lg hover:shadow-black/50`}
                     >
                       {offense ? (
                         <PlayDiagram
@@ -585,12 +649,22 @@ export default function TeamDashboard() {
                         </div>
                       )}
                       <div className="p-3">
-                        <p className="font-bold text-white">{p.name}</p>
-                        <p className="text-xs text-neutral-500">
-                          {formationName(p.formationId)}
-                          {p.createdBy && ` · ${p.createdBy}`}
-                          {commentCount(p.id) > 0 && ` · 💬 ${commentCount(p.id)}`}
+                        <p className="font-bold text-white group-hover:text-amber-300">
+                          {p.name}
                         </p>
+                        <div className="mt-1.5 flex flex-wrap items-center gap-1.5 text-xs">
+                          <span className="rounded bg-neutral-800 px-1.5 py-0.5 text-neutral-400">
+                            {formationName(p.formationId)}
+                          </span>
+                          {p.createdBy && (
+                            <span className="text-neutral-600">{p.createdBy}</span>
+                          )}
+                          {commentCount(p.id) > 0 && (
+                            <span className="text-neutral-500">
+                              💬 {commentCount(p.id)}
+                            </span>
+                          )}
+                        </div>
                       </div>
                     </button>
                   );

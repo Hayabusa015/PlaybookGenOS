@@ -4,6 +4,7 @@ import { Field, fieldPoint } from "./field";
 import { Marker } from "./marker";
 import { SaveStatus, type SaveState } from "./save-status";
 import { rpc } from "@/lib/api";
+import { FIELD_W } from "@/lib/field-dims";
 import { COUNT_LABELS, PERSONNEL_11, PLAYER_COUNTS, templatePlayers } from "@/lib/templates";
 import type { Formation, Side, TeamBundle } from "@/lib/types";
 import { btnGhost, btnPrimary, card, input } from "@/lib/ui";
@@ -53,7 +54,9 @@ export function FormationEditor({
       .catch((e) => setError(e.message));
   }, [joinCode, formationId, isNew]);
 
-  // Debounced autosave whenever the formation changes after initial load.
+  // Debounced autosave whenever the formation changes after initial load,
+  // with a flush on unmount so fast navigation never drops the last edit.
+  const unsaved = useRef<Formation | null>(null);
   useEffect(() => {
     if (!formation) return;
     if (!loaded.current) {
@@ -61,14 +64,23 @@ export function FormationEditor({
       return;
     }
     setSaveState("dirty");
+    unsaved.current = formation;
     const t = setTimeout(() => {
       setSaveState("saving");
+      unsaved.current = null;
       rpc("saveFormation", { joinCode, formation })
         .then(() => setSaveState("saved"))
         .catch(() => setSaveState("error"));
     }, 700);
     return () => clearTimeout(t);
   }, [formation, joinCode]);
+  useEffect(
+    () => () => {
+      if (unsaved.current)
+        rpc("saveFormation", { joinCode, formation: unsaved.current });
+    },
+    [joinCode],
+  );
 
   const create = async () => {
     setCreating(true);
@@ -131,6 +143,24 @@ export function FormationEditor({
   };
 
   const selected = formation?.players.find((p) => p.id === selectedId);
+
+  // Flip the formation left/right, swapping side-specific line labels.
+  const MIRROR_LABELS: Record<string, string> = {
+    LT: "RT", RT: "LT", LG: "RG", RG: "LG", LE: "RE", RE: "LE",
+  };
+  const mirror = () =>
+    setFormation((f) =>
+      f
+        ? {
+            ...f,
+            players: f.players.map((p) => ({
+              ...p,
+              x: FIELD_W - p.x,
+              label: MIRROR_LABELS[p.label] ?? p.label,
+            })),
+          }
+        : f,
+    );
 
   if (isNew && !formation) {
     return (
@@ -249,9 +279,14 @@ export function FormationEditor({
             </button>
           </>
         ) : (
-          <p className="text-sm text-neutral-500">
-            Drag players into position. Tap a player to rename their spot (QB, X, MIKE…).
-          </p>
+          <>
+            <button className={btnGhost} onClick={mirror} title="Flip the formation left ↔ right">
+              ⇄ Mirror
+            </button>
+            <p className="text-sm text-neutral-500">
+              Drag players into position. Tap a player to rename their spot (QB, X, MIKE…).
+            </p>
+          </>
         )}
       </div>
     </div>

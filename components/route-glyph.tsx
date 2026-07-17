@@ -2,6 +2,7 @@
 
 import { endAngle, smoothPathD, type Pt } from "@/lib/geometry";
 import type { RouteEndStyle } from "@/lib/types";
+import type { PointerEvent as ReactPointerEvent } from "react";
 
 export function RouteGlyph({
   points,
@@ -9,12 +10,15 @@ export function RouteGlyph({
   endStyle,
   dim = false,
   showHandles = false,
+  onHandleDown,
 }: {
   points: Pt[];
   color: string;
   endStyle: RouteEndStyle;
   dim?: boolean;
   showHandles?: boolean;
+  /** Pointer-down on the handle for path point `index` (0 = first drawn point). */
+  onHandleDown?: (index: number, e: ReactPointerEvent<SVGGElement>) => void;
 }) {
   if (points.length < 2) return null;
   const d = smoothPathD(points);
@@ -48,7 +52,15 @@ export function RouteGlyph({
       </g>
       {showHandles &&
         points.slice(1).map(([px, py], i) => (
-          <circle key={i} cx={px} cy={py} r="0.38" fill={color} opacity="0.85" />
+          <g
+            key={i}
+            transform={`translate(${px} ${py})`}
+            onPointerDown={onHandleDown ? (e) => onHandleDown(i, e) : undefined}
+            className={onHandleDown ? "cursor-move" : undefined}
+          >
+            <circle r="0.42" fill={color} stroke="#fff" strokeWidth="0.14" />
+            {onHandleDown && <circle r="1" fill="transparent" />}
+          </g>
         ))}
     </g>
   );
