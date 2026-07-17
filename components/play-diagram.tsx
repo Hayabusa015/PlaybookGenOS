@@ -3,6 +3,7 @@
 import { Field } from "./field";
 import { Marker } from "./marker";
 import { RouteGlyph } from "./route-glyph";
+import { getPositionColor } from "@/lib/templates";
 import { pathLength, pointAt, type Pt } from "@/lib/geometry";
 import type { Formation, Play } from "@/lib/types";
 import {
@@ -65,10 +66,6 @@ export function usePlayAnimation(durationMs = 2600) {
   return { progress, playing, run, reset };
 }
 
-/**
- * Full play rendering: field, ghosted defense, routes, offense markers.
- * Purely presentational — editors and viewers drive it with props.
- */
 export function PlayDiagram({
   offense,
   defense,
@@ -102,11 +99,12 @@ export function PlayDiagram({
       {offense.players.map((p) => {
         const route = routes[p.id];
         if (!route || route.path.length === 0) return null;
+        const routeColor = route.color ?? getPositionColor(p.label);
         return (
           <RouteGlyph
             key={p.id}
             points={[[p.x, p.y], ...route.path]}
-            color={route.color}
+            color={routeColor}
             endStyle={route.endStyle}
             dim={progress > 0}
             showHandles={showHandles && p.id === selectedId}
@@ -115,7 +113,6 @@ export function PlayDiagram({
       })}
       {offense.players.map((p) => {
         const [x, y] = positions.get(p.id) ?? [p.x, p.y];
-        const route = routes[p.id];
         return (
           <Marker
             key={p.id}
@@ -124,7 +121,6 @@ export function PlayDiagram({
             label={p.label}
             side="offense"
             selected={p.id === selectedId}
-            color={route && route.path.length > 0 ? route.color : undefined}
             onPointerDown={onMarkerDown ? (e) => onMarkerDown(p.id, e) : undefined}
           />
         );
@@ -133,7 +129,6 @@ export function PlayDiagram({
   );
 }
 
-/** Read-only diagram with Run / Reset controls (share viewer, previews). */
 export function AnimatedPlay({
   offense,
   defense,

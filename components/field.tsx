@@ -43,7 +43,9 @@ export function Field({
           : undefined
       }
     >
-      <rect x="0" y="0" width={FIELD_W} height={FIELD_H} fill="#1a3a1a" />
+      {/* light paper-style field background */}
+      <rect x="0" y="0" width={FIELD_W} height={FIELD_H} fill="#e8e8e8" />
+      {/* subtle alternating 5-yard stripes */}
       {[0, 2, 4, 6].map((i) => (
         <rect
           key={i}
@@ -51,10 +53,11 @@ export function Field({
           y={4 + i * 5}
           width={FIELD_W}
           height="5"
-          fill="#1f4d1f"
-          opacity="0.55"
+          fill="#dcdcdc"
+          opacity="0.6"
         />
       ))}
+      {/* yard lines */}
       {YARD_LINES.map((y) => (
         <line
           key={y}
@@ -62,34 +65,37 @@ export function Field({
           x2={FIELD_W - 0.4}
           y1={y}
           y2={y}
-          stroke="#d4d4d4"
+          stroke="#b0b0b0"
           strokeWidth="0.14"
-          opacity="0.4"
+          opacity="0.7"
         />
       ))}
+      {/* hash marks */}
       {HASH_X.map((hx) => (
-        <g key={hx} stroke="#d4d4d4" strokeWidth="0.1" opacity="0.3">
+        <g key={hx} stroke="#b0b0b0" strokeWidth="0.1" opacity="0.5">
           {Array.from({ length: FIELD_H - 1 }, (_, i) => i + 1).map((y) => (
             <line key={y} x1={hx - 0.4} x2={hx + 0.4} y1={y} y2={y} />
           ))}
         </g>
       ))}
+      {/* line of scrimmage */}
       <line
         x1="0.4"
         x2={FIELD_W - 0.4}
         y1={LOS_Y}
         y2={LOS_Y}
-        stroke="#93c5fd"
-        strokeWidth="0.22"
-        opacity="0.9"
+        stroke="#3b82f6"
+        strokeWidth="0.24"
+        opacity="0.7"
       />
+      {/* sideline border */}
       <rect
         x="0.2"
         y="0.2"
         width={FIELD_W - 0.4}
         height={FIELD_H - 0.4}
         fill="none"
-        stroke="#d4d4d4"
+        stroke="#999"
         strokeWidth="0.3"
         opacity="0.6"
       />

@@ -132,13 +132,13 @@ const POSITION_GROUP_MAP: Record<string, PositionGroup> = {
 };
 
 export const POSITION_COLORS: Record<PositionGroup, string> = {
-  ol: "#60a5fa",  // blue — offensive linemen
-  qb: "#facc15",  // gold — QB standout
-  rb: "#fb923c",  // orange — running backs
-  wr: "#4ade80",  // green — receivers & TE
-  dl: "#f87171",  // red — defensive linemen
-  lb: "#c084fc",  // purple — linebackers
-  db: "#22d3ee",  // cyan — defensive backs
+  ol: "#3b82f6",  // blue — offensive linemen
+  qb: "#f97316",  // orange — QB standout
+  rb: "#dc2626",  // red — running backs
+  wr: "#22c55e",  // green — receivers & TE
+  dl: "#dc2626",  // red — defensive linemen
+  lb: "#f97316",  // orange — linebackers
+  db: "#22c55e",  // green — defensive backs
 };
 
 export function getPositionColor(label: string): string {

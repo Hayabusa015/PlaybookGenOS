@@ -26,10 +26,10 @@ export function AssignmentList({
       {rows.map(({ player, route }) => (
         <li key={player.id} className="flex items-baseline gap-2 text-sm">
           <span
-            className="w-11 shrink-0 rounded px-1 text-center font-bold"
+            className="w-11 shrink-0 rounded px-1 text-center text-xs font-bold"
             style={{
-              color: light ? "#111" : (route!.color ?? getPositionColor(player.label)),
-              backgroundColor: light ? "#eee" : "rgb(38 38 38)",
+              color: light ? "#fff" : "#fff",
+              backgroundColor: light ? "#555" : getPositionColor(player.label),
             }}
           >
             {player.label}

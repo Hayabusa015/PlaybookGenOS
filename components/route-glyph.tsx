@@ -3,7 +3,6 @@
 import { endAngle, smoothPathD, type Pt } from "@/lib/geometry";
 import type { RouteEndStyle } from "@/lib/types";
 
-/** A drawn route: smoothed line plus an arrowhead or block bar at the end. */
 export function RouteGlyph({
   points,
   color,
@@ -11,7 +10,7 @@ export function RouteGlyph({
   dim = false,
   showHandles = false,
 }: {
-  points: Pt[]; // full path including the player's starting spot
+  points: Pt[];
   color: string;
   endStyle: RouteEndStyle;
   dim?: boolean;
@@ -23,33 +22,33 @@ export function RouteGlyph({
   const deg = (endAngle(points) * 180) / Math.PI;
 
   return (
-    <g opacity={dim ? 0.35 : 1}>
+    <g opacity={dim ? 0.3 : 1}>
       <path
         d={d}
         fill="none"
         stroke={color}
-        strokeWidth="0.32"
+        strokeWidth="0.42"
         strokeLinecap="round"
         strokeLinejoin="round"
       />
       <g transform={`translate(${ex} ${ey}) rotate(${deg})`}>
         {endStyle === "arrow" ? (
-          <path d="M -0.4 -0.75 L 1 0 L -0.4 0.75 Z" fill={color} />
+          <path d="M -0.5 -0.85 L 1.1 0 L -0.5 0.85 Z" fill={color} />
         ) : (
           <line
             x1="0.15"
-            y1="-1"
+            y1="-1.1"
             x2="0.15"
-            y2="1"
+            y2="1.1"
             stroke={color}
-            strokeWidth="0.4"
+            strokeWidth="0.45"
             strokeLinecap="round"
           />
         )}
       </g>
       {showHandles &&
         points.slice(1).map(([px, py], i) => (
-          <circle key={i} cx={px} cy={py} r="0.32" fill={color} opacity="0.85" />
+          <circle key={i} cx={px} cy={py} r="0.38" fill={color} opacity="0.85" />
         ))}
     </g>
   );

@@ -3,7 +3,7 @@
 import { PlayDiagram, usePlayAnimation } from "./play-diagram";
 import { SaveStatus, type SaveState } from "./save-status";
 import { getCoachName, rpc } from "@/lib/api";
-import { ROUTE_COLORS } from "@/lib/templates";
+import { getPositionColor, ROUTE_COLORS } from "@/lib/templates";
 import type { Formation, Play, PlayerRoute, TeamBundle } from "@/lib/types";
 import { btnGhost, btnPrimary, card, input } from "@/lib/ui";
 import Link from "next/link";
@@ -359,14 +359,12 @@ export function PlayEditor({
                 <li key={p.id} className="flex items-center gap-2">
                   <button
                     onClick={() => selectPlayer(p.id)}
-                    className={`w-11 shrink-0 rounded-md px-1 py-1 text-center text-xs font-bold ${
+                    className={`w-11 shrink-0 rounded-md px-1 py-1 text-center text-xs font-bold text-white ${
                       p.id === selectedId
-                        ? "bg-amber-600 text-white"
-                        : "bg-neutral-800 text-neutral-200 hover:bg-neutral-700"
+                        ? "ring-2 ring-amber-400 ring-offset-1 ring-offset-neutral-900"
+                        : "hover:brightness-110"
                     }`}
-                    style={
-                      r && r.path.length > 0 ? { color: r.color } : undefined
-                    }
+                    style={{ backgroundColor: getPositionColor(p.label) }}
                   >
                     {p.label}
                   </button>
