@@ -172,18 +172,47 @@ function FormationNode({
   );
 }
 
+function useIsMobile(breakpoint = 768) {
+  const [mobile, setMobile] = useState(false);
+  useEffect(() => {
+    const mq = window.matchMedia(`(max-width: ${breakpoint - 1}px)`);
+    setMobile(mq.matches);
+    const handler = (e: MediaQueryListEvent) => setMobile(e.matches);
+    mq.addEventListener("change", handler);
+    return () => mq.removeEventListener("change", handler);
+  }, [breakpoint]);
+  return mobile;
+}
+
 export default function TeamDashboard() {
   const { code } = useParams<{ code: string }>();
   const joinCode = decodeURIComponent(code).toUpperCase();
   const router = useRouter();
 
+  const isMobile = useIsMobile();
   const [bundle, setBundle] = useState<TeamBundle | null>(null);
   const [error, setError] = useState("");
   const [importMsg, setImportMsg] = useState("");
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [selectedType, setSelectedType] = useState<"formation" | "play">("play");
-  const [sidebarOpen, setSidebarOpen] = useState(true);
+  const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [moreOpen, setMoreOpen] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
+  const moreRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    setSidebarOpen(!isMobile);
+  }, [isMobile]);
+
+  useEffect(() => {
+    if (!moreOpen) return;
+    const close = (e: MouseEvent) => {
+      if (moreRef.current && !moreRef.current.contains(e.target as Node))
+        setMoreOpen(false);
+    };
+    document.addEventListener("pointerdown", close);
+    return () => document.removeEventListener("pointerdown", close);
+  }, [moreOpen]);
 
   const load = useCallback(() => {
     rpc<TeamBundle>("getTeam", { joinCode })
@@ -234,6 +263,7 @@ export default function TeamDashboard() {
   const onSelect = (id: string, type: "formation" | "play") => {
     setSelectedId(id);
     setSelectedType(type);
+    if (isMobile) setSidebarOpen(false);
   };
 
   if (error)
@@ -264,22 +294,84 @@ export default function TeamDashboard() {
   return (
     <main className="flex h-screen flex-col">
       {/* top bar */}
-      <div className="flex flex-wrap items-center gap-3 border-b border-neutral-800 px-4 py-3">
-        <Link href="/" className="text-2xl" title="Home">
+      <div className="flex items-center gap-2 border-b border-neutral-800 px-3 py-2 md:gap-3 md:px-4 md:py-3">
+        <button
+          onClick={() => setSidebarOpen(!sidebarOpen)}
+          className="shrink-0 text-neutral-400 hover:text-white md:hidden"
+          aria-label="Toggle sidebar"
+        >
+          <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M4 6h16M4 12h16M4 18h16" />
+          </svg>
+        </button>
+        <Link href="/" className="text-xl md:text-2xl" title="Home">
           🏈
         </Link>
-        <h1 className="mr-auto text-xl font-black text-white">{team.name}</h1>
-        <CopyChip label="Coach code" value={team.joinCode} />
-        <CopyChip label="Share (read-only)" value={shareUrl} />
-        <Link href={`/t/${joinCode}/print`} className={btnGhost}>
-          🖨 Print / PDF
-        </Link>
-        <button className={btnGhost} onClick={() => downloadPlaybook(bundle)}>
-          ⬇ Export file
-        </button>
-        <button className={btnGhost} onClick={() => fileRef.current?.click()}>
-          ⬆ Import file
-        </button>
+        <h1 className="mr-auto truncate text-base font-black text-white md:text-xl">
+          {team.name}
+        </h1>
+
+        {/* desktop actions */}
+        <div className="hidden items-center gap-2 md:flex">
+          <CopyChip label="Coach code" value={team.joinCode} />
+          <CopyChip label="Share (read-only)" value={shareUrl} />
+          <Link href={`/t/${joinCode}/print`} className={btnGhost}>
+            🖨 Print / PDF
+          </Link>
+          <button className={btnGhost} onClick={() => downloadPlaybook(bundle)}>
+            ⬇ Export file
+          </button>
+          <button className={btnGhost} onClick={() => fileRef.current?.click()}>
+            ⬆ Import file
+          </button>
+        </div>
+
+        {/* mobile more menu */}
+        <div className="relative md:hidden" ref={moreRef}>
+          <button
+            onClick={() => setMoreOpen(!moreOpen)}
+            className={btnGhost}
+            aria-label="More actions"
+          >
+            ⋯
+          </button>
+          {moreOpen && (
+            <div className="absolute right-0 top-full z-50 mt-1 w-56 rounded-lg border border-neutral-700 bg-neutral-900 p-2 shadow-xl">
+              <div className="mb-1">
+                <CopyChip label="Coach code" value={team.joinCode} />
+              </div>
+              <div className="mb-1">
+                <CopyChip label="Share" value={shareUrl} />
+              </div>
+              <Link
+                href={`/t/${joinCode}/print`}
+                className={`${btnGhost} mb-1 block w-full text-left`}
+                onClick={() => setMoreOpen(false)}
+              >
+                🖨 Print / PDF
+              </Link>
+              <button
+                className={`${btnGhost} mb-1 w-full text-left`}
+                onClick={() => {
+                  downloadPlaybook(bundle);
+                  setMoreOpen(false);
+                }}
+              >
+                ⬇ Export file
+              </button>
+              <button
+                className={`${btnGhost} w-full text-left`}
+                onClick={() => {
+                  fileRef.current?.click();
+                  setMoreOpen(false);
+                }}
+              >
+                ⬆ Import file
+              </button>
+            </div>
+          )}
+        </div>
+
         <input
           ref={fileRef}
           type="file"
@@ -294,12 +386,22 @@ export default function TeamDashboard() {
       </div>
       {importMsg && <p className="px-4 py-2 text-sm text-amber-400">{importMsg}</p>}
 
-      <div className="flex flex-1 overflow-hidden">
+      <div className="relative flex flex-1 overflow-hidden">
+        {/* mobile backdrop */}
+        {isMobile && sidebarOpen && (
+          <div
+            className="absolute inset-0 z-30 bg-black/60"
+            onClick={() => setSidebarOpen(false)}
+          />
+        )}
+
         {/* sidebar */}
         <aside
-          className={`flex shrink-0 flex-col border-r border-neutral-800 bg-neutral-950 transition-all ${
-            sidebarOpen ? "w-64" : "w-0"
-          } overflow-hidden`}
+          className={`absolute inset-y-0 left-0 z-40 flex w-64 shrink-0 flex-col border-r border-neutral-800 bg-neutral-950 transition-transform md:relative md:z-auto ${
+            sidebarOpen
+              ? "translate-x-0"
+              : "-translate-x-full md:translate-x-0 md:w-0 md:overflow-hidden md:border-0"
+          }`}
         >
           <div className="flex items-center justify-between border-b border-neutral-800 px-3 py-2">
             <span className="text-sm font-bold uppercase tracking-wide text-neutral-400">
@@ -336,11 +438,11 @@ export default function TeamDashboard() {
           </div>
         </aside>
 
-        {/* collapse toggle when sidebar is closed */}
-        {!sidebarOpen && (
+        {/* desktop collapse toggle when sidebar is closed */}
+        {!sidebarOpen && !isMobile && (
           <button
             onClick={() => setSidebarOpen(true)}
-            className="flex items-center border-r border-neutral-800 bg-neutral-900 px-2 text-neutral-400 hover:text-white"
+            className="hidden items-center border-r border-neutral-800 bg-neutral-900 px-2 text-neutral-400 hover:text-white md:flex"
             title="Open sidebar"
           >
             ▶
@@ -348,27 +450,29 @@ export default function TeamDashboard() {
         )}
 
         {/* main content area */}
-        <div className="flex-1 overflow-y-auto p-6">
+        <div className="flex-1 overflow-y-auto p-3 md:p-6">
           {selectedPlay ? (() => {
             const offense = formations.find((f) => f.id === selectedPlay.formationId);
             if (!offense) return <p className="text-rose-400">Formation deleted.</p>;
             return (
               <div>
-                <div className="mb-4 flex items-center gap-3">
-                  <h2 className="text-xl font-bold text-white">{selectedPlay.name}</h2>
+                <div className="mb-4 flex flex-wrap items-center gap-2 md:gap-3">
+                  <h2 className="text-lg font-bold text-white md:text-xl">{selectedPlay.name}</h2>
                   <span className="text-sm text-neutral-500">{offense.name}</span>
-                  <Link
-                    href={`/t/${joinCode}/play/${selectedPlay.id}`}
-                    className={`${btnGhost} ml-auto`}
-                  >
-                    Edit play
-                  </Link>
-                  <button
-                    className={btnDanger}
-                    onClick={() => deletePlay(selectedPlay.id, selectedPlay.name)}
-                  >
-                    Delete
-                  </button>
+                  <div className="ml-auto flex gap-2">
+                    <Link
+                      href={`/t/${joinCode}/play/${selectedPlay.id}`}
+                      className={btnGhost}
+                    >
+                      Edit play
+                    </Link>
+                    <button
+                      className={btnDanger}
+                      onClick={() => deletePlay(selectedPlay.id, selectedPlay.name)}
+                    >
+                      Delete
+                    </button>
+                  </div>
                 </div>
                 <div className="max-w-3xl">
                   <PlayDiagram
@@ -391,23 +495,25 @@ export default function TeamDashboard() {
             );
           })() : selectedFormation ? (
             <div>
-              <div className="mb-4 flex items-center gap-3">
-                <h2 className="text-xl font-bold text-white">{selectedFormation.name}</h2>
+              <div className="mb-4 flex flex-wrap items-center gap-2 md:gap-3">
+                <h2 className="text-lg font-bold text-white md:text-xl">{selectedFormation.name}</h2>
                 <span className="text-sm text-neutral-500">
                   {selectedFormation.side} · {selectedFormation.playerCount} players
                 </span>
-                <Link
-                  href={`/t/${joinCode}/formation/${selectedFormation.id}`}
-                  className={`${btnGhost} ml-auto`}
-                >
-                  Edit formation
-                </Link>
-                <button
-                  className={btnDanger}
-                  onClick={() => deleteFormation(selectedFormation.id, selectedFormation.name)}
-                >
-                  Delete
-                </button>
+                <div className="ml-auto flex gap-2">
+                  <Link
+                    href={`/t/${joinCode}/formation/${selectedFormation.id}`}
+                    className={btnGhost}
+                  >
+                    Edit formation
+                  </Link>
+                  <button
+                    className={btnDanger}
+                    onClick={() => deleteFormation(selectedFormation.id, selectedFormation.name)}
+                  >
+                    Delete
+                  </button>
+                </div>
               </div>
               <div className="max-w-3xl">
                 <FormationThumb f={selectedFormation} />
