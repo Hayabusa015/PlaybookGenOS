@@ -105,26 +105,26 @@ await clickField(page, 33, 20);
 await clickField(page, 36, 12);
 await page.getByPlaceholder("assignment…").nth(10).fill("Take handoff, hit B-gap");
 // switch color to red for the Z route
-await page.getByRole("button", { name: "✓ Done" }).click();
+await page.getByRole("button", { name: "Done", exact: true }).click();
 
 await page.getByRole("button", { name: "Z", exact: true }).click();
 await page.getByLabel("route color #f87171").click();
 await clickField(page, 40, 18);
 await clickField(page, 30, 10);
-await page.getByRole("button", { name: "✓ Done" }).click();
+await page.getByRole("button", { name: "Done", exact: true }).click();
 
 // TE gets a block assignment
 await page.getByRole("button", { name: "TE", exact: true }).click();
 await clickField(page, 36.5, 21.5);
-await page.getByRole("button", { name: "→ Route" }).click(); // toggle to block
-await page.getByRole("button", { name: "✓ Done" }).click();
+await page.getByLabel("Block tool").click(); // switch TE to a block
+await page.getByRole("button", { name: "Done", exact: true }).click();
 
 await page.waitForSelector("text=✓ Saved");
 await page.screenshot({ path: `${SHOTS}/2-play-editor.png` });
 console.log("play editor OK (3 routes drawn, assignment set, autosaved)");
 
 // ---------- 5. animation ----------
-await page.getByRole("button", { name: "▶ Run play" }).click();
+await page.getByLabel("Run play").click();
 await page.waitForTimeout(1200);
 await page.screenshot({ path: `${SHOTS}/3-play-animating.png` });
 await page.waitForTimeout(1800);
@@ -192,7 +192,7 @@ console.log("import OK into new team");
 
 // ---------- 8. print view ----------
 await page.getByRole("link", { name: "🖨 Print / PDF" }).click();
-await page.waitForSelector("text=— Playbook");
+await page.waitForSelector("text=— print layout");
 await page.waitForSelector("text=Power Right");
 await page.screenshot({ path: `${SHOTS}/6-print-view.png`, fullPage: true });
 console.log("print view OK");

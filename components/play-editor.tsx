@@ -3,18 +3,19 @@
 import { fieldPoint } from "./field";
 import { PlayDiagram, usePlayAnimation } from "./play-diagram";
 import { SaveStatus, type SaveState } from "./save-status";
+import { AUTO_COLOR, ToolRail } from "./tool-rail";
 import { getCoachName, rpc } from "@/lib/api";
-import { getPositionColor, ROUTE_COLORS } from "@/lib/templates";
-import type { Formation, Play, PlayerRoute, TeamBundle } from "@/lib/types";
+import { getPositionColor } from "@/lib/templates";
+import type { Formation, Play, PlayerRoute, RouteEndStyle, TeamBundle } from "@/lib/types";
 import { btnGhost, btnPrimary, card, input } from "@/lib/ui";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import type { Pt } from "@/lib/geometry";
 
-const emptyRoute = (color: string): PlayerRoute => ({
+const emptyRoute = (color: string, endStyle: RouteEndStyle): PlayerRoute => ({
   path: [],
-  endStyle: "arrow",
+  endStyle,
   color,
   assignment: "",
 });
@@ -34,6 +35,8 @@ export function PlayEditor({
   const [play, setPlay] = useState<Play | null>(null);
   const [saveState, setSaveState] = useState<SaveState>("saved");
   const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [tool, setTool] = useState<"route" | "block">("route");
+  const [currentColor, setCurrentColor] = useState<string>(AUTO_COLOR);
 
   // creation form
   const [newName, setNewName] = useState("");
@@ -127,14 +130,19 @@ export function PlayEditor({
     }
   };
 
+  const labelOf = (playerId: string) =>
+    offense?.players.find((p) => p.id === playerId)?.label ?? "";
+  const resolveColor = (playerId: string) =>
+    currentColor === AUTO_COLOR
+      ? getPositionColor(labelOf(playerId))
+      : currentColor;
+
   const updateRoute = (playerId: string, patch: Partial<PlayerRoute>) => {
     setPlay((pl) => {
       if (!pl) return pl;
       const existing =
         pl.routes[playerId] ??
-        emptyRoute(
-          ROUTE_COLORS[Object.keys(pl.routes).length % ROUTE_COLORS.length],
-        );
+        emptyRoute(resolveColor(playerId), tool === "block" ? "block" : "arrow");
       return {
         ...pl,
         routes: { ...pl.routes, [playerId]: { ...existing, ...patch } },
@@ -145,7 +153,31 @@ export function PlayEditor({
   const selectPlayer = (id: string) => {
     anim.reset();
     setSelectedId(id);
-    if (play && !play.routes[id]) updateRoute(id, {});
+    const r = play?.routes[id];
+    if (r) {
+      // Sync the rail to the route being edited.
+      setTool(r.endStyle === "block" ? "block" : "route");
+      setCurrentColor(
+        r.color === getPositionColor(labelOf(id)) ? AUTO_COLOR : r.color,
+      );
+    } else if (play) {
+      updateRoute(id, {});
+    }
+  };
+
+  const applyTool = (t: "route" | "block") => {
+    setTool(t);
+    if (selectedId && play?.routes[selectedId])
+      updateRoute(selectedId, { endStyle: t === "block" ? "block" : "arrow" });
+  };
+
+  const applyColor = (c: string) => {
+    setCurrentColor(c);
+    if (selectedId && play?.routes[selectedId])
+      updateRoute(selectedId, {
+        color:
+          c === AUTO_COLOR ? getPositionColor(labelOf(selectedId)) : c,
+      });
   };
 
   const onFieldTap = (p: Pt) => {
@@ -281,113 +313,81 @@ export function PlayEditor({
       </div>
 
       <div className="grid gap-4 lg:grid-cols-[1fr_310px]">
-        <div>
-          <PlayDiagram
-            offense={offense}
-            defense={defense}
-            routes={play.routes}
+        <div className="flex flex-col gap-3 sm:flex-row">
+          <ToolRail
+            tool={tool}
+            onTool={applyTool}
+            color={currentColor}
+            onColor={applyColor}
+            hasSelection={Boolean(selectedId && selectedRoute)}
+            routeLength={selectedRoute?.path.length ?? 0}
+            onUndo={() =>
+              selectedId &&
+              selectedRoute &&
+              updateRoute(selectedId, { path: selectedRoute.path.slice(0, -1) })
+            }
+            onClear={() => selectedId && updateRoute(selectedId, { path: [] })}
+            onDone={() => setSelectedId(null)}
+            playing={anim.playing}
             progress={anim.progress}
-            selectedId={selectedId}
-            showHandles
-            svgRef={svgRef}
-            onMarkerDown={(id, e) => {
-              e.stopPropagation();
-              selectPlayer(id);
+            onRun={() => {
+              setSelectedId(null);
+              anim.playing ? anim.reset() : anim.run();
             }}
-            onFieldPointerDown={onFieldTap}
-            onHandleDown={onHandleDown}
-            className="shadow-lg"
+            onReset={anim.reset}
           />
-
-          {/* drawing toolbar */}
-          <div className="mt-3 flex min-h-11 flex-wrap items-center gap-2">
-            {selectedId && selectedRoute ? (
-              <>
-                <span className="text-sm font-semibold text-neutral-300">
-                  {offense.players.find((p) => p.id === selectedId)?.label}:
-                </span>
-                {ROUTE_COLORS.map((c) => (
-                  <button
-                    key={c}
-                    aria-label={`route color ${c}`}
-                    onClick={() => updateRoute(selectedId, { color: c })}
-                    className={`h-7 w-7 rounded-full border-2 ${selectedRoute.color === c ? "border-white" : "border-transparent"}`}
-                    style={{ backgroundColor: c }}
-                  />
-                ))}
-                <button
-                  className={btnGhost}
-                  onClick={() =>
-                    updateRoute(selectedId, {
-                      endStyle:
-                        selectedRoute.endStyle === "arrow" ? "block" : "arrow",
-                    })
-                  }
-                >
-                  {selectedRoute.endStyle === "arrow" ? "→ Route" : "⊤ Block"}
-                </button>
-                <button
-                  className={btnGhost}
-                  disabled={selectedRoute.path.length === 0}
-                  onClick={() =>
-                    updateRoute(selectedId, {
-                      path: selectedRoute.path.slice(0, -1),
-                    })
-                  }
-                >
-                  ⌫ Undo point
-                </button>
-                <button
-                  className={btnGhost}
-                  disabled={selectedRoute.path.length === 0}
-                  onClick={() => updateRoute(selectedId, { path: [] })}
-                >
-                  Clear
-                </button>
-                <button
-                  className={`${btnGhost} bg-amber-700 hover:bg-amber-600`}
-                  onClick={() => setSelectedId(null)}
-                >
-                  ✓ Done
-                </button>
-              </>
-            ) : (
-              <>
-                <button
-                  className={btnGhost}
-                  onClick={() => {
-                    setSelectedId(null);
-                    anim.playing ? anim.reset() : anim.run();
-                  }}
-                >
-                  {anim.playing ? "■ Stop" : "▶ Run play"}
-                </button>
-                {anim.progress > 0 && !anim.playing && (
-                  <button className={btnGhost} onClick={anim.reset}>
-                    ↺ Reset
-                  </button>
-                )}
-                <select
-                  className={`${input} py-1.5 text-sm`}
-                  value={play.defenseFormationId ?? ""}
-                  onChange={(e) =>
-                    setPlay({ ...play, defenseFormationId: e.target.value || null })
-                  }
-                  aria-label="Defensive look"
-                >
-                  <option value="">No defensive look</option>
-                  {defenses.map((f) => (
-                    <option key={f.id} value={f.id}>
-                      vs {f.name}
-                    </option>
-                  ))}
-                </select>
+          <div className="min-w-0 flex-1">
+            <PlayDiagram
+              offense={offense}
+              defense={defense}
+              routes={play.routes}
+              progress={anim.progress}
+              selectedId={selectedId}
+              showHandles
+              svgRef={svgRef}
+              onMarkerDown={(id, e) => {
+                e.stopPropagation();
+                selectPlayer(id);
+              }}
+              onFieldPointerDown={onFieldTap}
+              onHandleDown={onHandleDown}
+              className="shadow-lg"
+            />
+            <div className="mt-3 flex min-h-9 flex-wrap items-center gap-2">
+              {selectedId && selectedRoute ? (
                 <span className="text-sm text-neutral-500">
-                  Tap a player, then tap the field to draw their route. Drag the
-                  dots to reshape it.
+                  <span className="font-bold text-neutral-200">
+                    {labelOf(selectedId)}
+                  </span>{" "}
+                  — tap the field to add points, drag the dots to reshape, then
+                  ✓ when done.
                 </span>
-              </>
-            )}
+              ) : (
+                <>
+                  <select
+                    className={`${input} py-1.5 text-sm`}
+                    value={play.defenseFormationId ?? ""}
+                    onChange={(e) =>
+                      setPlay({
+                        ...play,
+                        defenseFormationId: e.target.value || null,
+                      })
+                    }
+                    aria-label="Defensive look"
+                  >
+                    <option value="">No defensive look</option>
+                    {defenses.map((f) => (
+                      <option key={f.id} value={f.id}>
+                        vs {f.name}
+                      </option>
+                    ))}
+                  </select>
+                  <span className="text-sm text-neutral-500">
+                    Tap a player, then tap the field to draw their route.
+                  </span>
+                </>
+              )}
+            </div>
           </div>
         </div>
 
