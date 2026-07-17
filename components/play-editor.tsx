@@ -353,7 +353,8 @@ export function PlayEditor({
               onHandleDown={onHandleDown}
               className="shadow-lg"
             />
-            <div className="mt-3 flex min-h-9 flex-wrap items-center gap-2">
+            {/* fixed height so swapping between states never shifts the layout */}
+            <div className="mt-3 flex min-h-11 flex-wrap items-center gap-2">
               {selectedId && selectedRoute ? (
                 <span className="text-sm text-neutral-500">
                   <span className="font-bold text-neutral-200">

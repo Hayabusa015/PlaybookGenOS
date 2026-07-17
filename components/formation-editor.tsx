@@ -4,7 +4,7 @@ import { Field, fieldPoint } from "./field";
 import { Marker } from "./marker";
 import { SaveStatus, type SaveState } from "./save-status";
 import { rpc } from "@/lib/api";
-import { FIELD_W } from "@/lib/field-dims";
+import { FIELD_H, FIELD_W } from "@/lib/field-dims";
 import { COUNT_LABELS, PERSONNEL_11, PLAYER_COUNTS, templatePlayers } from "@/lib/templates";
 import type { Formation, Side, TeamBundle } from "@/lib/types";
 import { btnGhost, btnPrimary, card, input } from "@/lib/ui";
@@ -124,17 +124,45 @@ export function FormationEditor({
     );
   }, []);
 
+  // Alignment guides shown while a drag is snapped to another player's
+  // row/column or the field's center line.
+  const [guides, setGuides] = useState<{ x: number | null; y: number | null }>({
+    x: null,
+    y: null,
+  });
+
   const onMarkerDown = (id: string) => (e: ReactPointerEvent<SVGGElement>) => {
     e.stopPropagation();
     setSelectedId(id);
     dragId.current = id;
+    // Snap radius ≈ 12 screen px regardless of device size.
+    const pxPerYard = svgRef.current
+      ? svgRef.current.getBoundingClientRect().width / FIELD_W
+      : 18;
+    const snap = Math.min(1.4, Math.max(0.45, 12 / pxPerYard));
+    const others = formation?.players.filter((p) => p.id !== id) ?? [];
+    const xTargets = [...others.map((p) => p.x), FIELD_W / 2];
+    const yTargets = others.map((p) => p.y);
+    const nearest = (v: number, targets: number[]) => {
+      let best: number | null = null;
+      for (const t of targets)
+        if (Math.abs(v - t) < snap && (best === null || Math.abs(v - t) < Math.abs(v - best)))
+          best = t;
+      return best;
+    };
     const move = (ev: PointerEvent) => {
       if (!svgRef.current || !dragId.current) return;
-      const [x, y] = fieldPoint(svgRef.current, ev);
+      let [x, y] = fieldPoint(svgRef.current, ev);
+      const gx = nearest(x, xTargets);
+      const gy = nearest(y, yTargets);
+      if (gx !== null) x = gx;
+      if (gy !== null) y = gy;
+      setGuides({ x: gx, y: gy });
       movePlayer(dragId.current, x, y);
     };
     const up = () => {
       dragId.current = null;
+      setGuides({ x: null, y: null });
       window.removeEventListener("pointermove", move);
       window.removeEventListener("pointerup", up);
     };
@@ -242,6 +270,28 @@ export function FormationEditor({
       </div>
 
       <Field svgRef={svgRef} className="shadow-lg">
+        {guides.x !== null && (
+          <line
+            x1={guides.x}
+            x2={guides.x}
+            y1={0.4}
+            y2={FIELD_H - 0.4}
+            stroke="#f59e0b"
+            strokeWidth="0.12"
+            strokeDasharray="0.7 0.5"
+          />
+        )}
+        {guides.y !== null && (
+          <line
+            x1={0.4}
+            x2={FIELD_W - 0.4}
+            y1={guides.y}
+            y2={guides.y}
+            stroke="#f59e0b"
+            strokeWidth="0.12"
+            strokeDasharray="0.7 0.5"
+          />
+        )}
         {formation.players.map((p) => (
           <Marker
             key={p.id}
@@ -255,12 +305,13 @@ export function FormationEditor({
         ))}
       </Field>
 
-      <div className="mt-3 flex flex-wrap items-center gap-3">
+      {/* fixed height so swapping between states never shifts the layout */}
+      <div className="mt-3 flex min-h-12 flex-wrap items-center gap-3">
         {selected ? (
           <>
             <span className="text-sm text-neutral-400">Position label:</span>
             <input
-              className={`${input} w-24 text-center font-bold uppercase`}
+              className={`${input} w-24 py-1.5 text-center font-bold uppercase`}
               value={selected.label}
               maxLength={3}
               onChange={(e) =>
@@ -284,7 +335,8 @@ export function FormationEditor({
               ⇄ Mirror
             </button>
             <p className="text-sm text-neutral-500">
-              Drag players into position. Tap a player to rename their spot (QB, X, MIKE…).
+              Drag players into position — they snap to line up with teammates.
+              Tap a player to rename their spot (QB, X, MIKE…).
             </p>
           </>
         )}
