@@ -126,6 +126,19 @@ export const PERSONNEL_11: PersonnelPackage[] = [
     ],
   },
   {
+    id: "32",
+    label: "32 Personnel",
+    description: "2 RB, 1 FB, 2 TE, 0 WR (heavy)",
+    spots: [
+      ...OL, QB,
+      ["FB", CX, LOS_Y + 4.5],
+      ["RB", CX - 3, LOS_Y + 7],
+      ["RB", CX + 3, LOS_Y + 7],
+      ["TE", CX + 9, LOS_Y + 1],
+      ["TE", CX - 9, LOS_Y + 1],
+    ],
+  },
+  {
     id: "23",
     label: "23 Personnel",
     description: "2 RB, 3 TE, 0 WR (goal line)",
