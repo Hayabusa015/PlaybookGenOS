@@ -14,21 +14,135 @@ const CX = 26.7; // middle of the field
 
 type Spot = [label: string, x: number, y: number];
 
+export interface PersonnelPackage {
+  id: string;
+  label: string;
+  description: string;
+  spots: Spot[];
+}
+
+// OL is always 5: LT LG C RG RT. QB is always 1.
+// Personnel code: first digit = RBs, second digit = TEs.
+// Remaining skill players (out of 5 non-OL/QB) are WRs.
+const OL: Spot[] = [
+  ["LT", CX - 6, LOS_Y + 1],
+  ["LG", CX - 3, LOS_Y + 1],
+  ["C", CX, LOS_Y + 1],
+  ["RG", CX + 3, LOS_Y + 1],
+  ["RT", CX + 6, LOS_Y + 1],
+];
+const QB: Spot = ["QB", CX, LOS_Y + 2.8];
+
+export const PERSONNEL_11: PersonnelPackage[] = [
+  {
+    id: "11",
+    label: "11 Personnel",
+    description: "1 RB, 1 TE, 3 WR",
+    spots: [
+      ...OL, QB,
+      ["RB", CX, LOS_Y + 6.5],
+      ["TE", CX + 9, LOS_Y + 1],
+      ["X", 8, LOS_Y + 1],
+      ["H", 16, LOS_Y + 2],
+      ["Z", 46, LOS_Y + 1],
+    ],
+  },
+  {
+    id: "12",
+    label: "12 Personnel",
+    description: "1 RB, 2 TE",
+    spots: [
+      ...OL, QB,
+      ["RB", CX, LOS_Y + 6.5],
+      ["TE", CX + 9, LOS_Y + 1],
+      ["TE", CX - 9, LOS_Y + 1],
+      ["X", 8, LOS_Y + 1],
+      ["Z", 46, LOS_Y + 1],
+    ],
+  },
+  {
+    id: "21",
+    label: "21 Personnel",
+    description: "2 RB, 1 TE, 2 WR",
+    spots: [
+      ...OL, QB,
+      ["FB", CX, LOS_Y + 5.5],
+      ["RB", CX, LOS_Y + 8],
+      ["TE", CX + 9, LOS_Y + 1],
+      ["X", 8, LOS_Y + 1],
+      ["Z", 46, LOS_Y + 1],
+    ],
+  },
+  {
+    id: "22",
+    label: "22 Personnel",
+    description: "2 RB, 2 TE, 1 WR",
+    spots: [
+      ...OL, QB,
+      ["FB", CX, LOS_Y + 5.5],
+      ["RB", CX, LOS_Y + 8],
+      ["TE", CX + 9, LOS_Y + 1],
+      ["TE", CX - 9, LOS_Y + 1],
+      ["X", 8, LOS_Y + 1],
+    ],
+  },
+  {
+    id: "10",
+    label: "10 Personnel",
+    description: "1 RB, 0 TE, 4 WR (empty)",
+    spots: [
+      ...OL, QB,
+      ["RB", CX, LOS_Y + 6.5],
+      ["X", 8, LOS_Y + 1],
+      ["H", 16, LOS_Y + 2],
+      ["Y", 38, LOS_Y + 2],
+      ["Z", 46, LOS_Y + 1],
+    ],
+  },
+  {
+    id: "20",
+    label: "20 Personnel",
+    description: "2 RB, 0 TE, 3 WR",
+    spots: [
+      ...OL, QB,
+      ["FB", CX, LOS_Y + 5.5],
+      ["RB", CX, LOS_Y + 8],
+      ["X", 8, LOS_Y + 1],
+      ["H", 16, LOS_Y + 2],
+      ["Z", 46, LOS_Y + 1],
+    ],
+  },
+  {
+    id: "13",
+    label: "13 Personnel",
+    description: "1 RB, 3 TE, 1 WR",
+    spots: [
+      ...OL, QB,
+      ["RB", CX, LOS_Y + 6.5],
+      ["TE", CX + 9, LOS_Y + 1],
+      ["TE", CX - 9, LOS_Y + 1],
+      ["TE", CX + 12, LOS_Y + 2],
+      ["X", 8, LOS_Y + 1],
+    ],
+  },
+  {
+    id: "23",
+    label: "23 Personnel",
+    description: "2 RB, 3 TE, 0 WR (goal line)",
+    spots: [
+      ...OL, QB,
+      ["FB", CX, LOS_Y + 5.5],
+      ["RB", CX, LOS_Y + 8],
+      ["TE", CX + 9, LOS_Y + 1],
+      ["TE", CX - 9, LOS_Y + 1],
+      ["TE", CX + 12, LOS_Y + 2],
+    ],
+  },
+];
+
 // Offense lines up below the LOS (larger y) and attacks upfield.
 const OFFENSE: Record<number, Spot[]> = {
-  11: [
-    ["LT", CX - 6, LOS_Y + 1],
-    ["LG", CX - 3, LOS_Y + 1],
-    ["C", CX, LOS_Y + 1],
-    ["RG", CX + 3, LOS_Y + 1],
-    ["RT", CX + 6, LOS_Y + 1],
-    ["TE", CX + 9, LOS_Y + 1],
-    ["X", 8, LOS_Y + 1],
-    ["Z", 46, LOS_Y + 2],
-    ["QB", CX, LOS_Y + 2.8],
-    ["FB", CX, LOS_Y + 5.5],
-    ["RB", CX, LOS_Y + 8],
-  ],
+  11: PERSONNEL_11[0].spots, // default to 11 personnel
   8: [
     ["LE", CX - 6, LOS_Y + 1],
     ["LG", CX - 3, LOS_Y + 1],
@@ -100,8 +214,14 @@ const DEFENSE: Record<number, Spot[]> = {
   ],
 };
 
-export function templatePlayers(side: Side, count: number): Player[] {
-  const spots = (side === "offense" ? OFFENSE : DEFENSE)[count] ?? [];
+export function templatePlayers(side: Side, count: number, personnelId?: string): Player[] {
+  let spots: Spot[];
+  if (side === "offense" && count === 11 && personnelId) {
+    const pkg = PERSONNEL_11.find((p) => p.id === personnelId);
+    spots = pkg?.spots ?? OFFENSE[count] ?? [];
+  } else {
+    spots = (side === "offense" ? OFFENSE : DEFENSE)[count] ?? [];
+  }
   return spots.map(([label, x, y]) => ({
     id: crypto.randomUUID(),
     label,

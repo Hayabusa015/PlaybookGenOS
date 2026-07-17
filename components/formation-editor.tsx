@@ -4,7 +4,7 @@ import { Field, fieldPoint } from "./field";
 import { Marker } from "./marker";
 import { SaveStatus, type SaveState } from "./save-status";
 import { rpc } from "@/lib/api";
-import { COUNT_LABELS, PLAYER_COUNTS, templatePlayers } from "@/lib/templates";
+import { COUNT_LABELS, PERSONNEL_11, PLAYER_COUNTS, templatePlayers } from "@/lib/templates";
 import type { Formation, Side, TeamBundle } from "@/lib/types";
 import { btnGhost, btnPrimary, card, input } from "@/lib/ui";
 import Link from "next/link";
@@ -35,6 +35,7 @@ export function FormationEditor({
   const [newName, setNewName] = useState("");
   const [newSide, setNewSide] = useState<Side>("offense");
   const [newCount, setNewCount] = useState<number>(11);
+  const [newPersonnel, setNewPersonnel] = useState<string>("11");
   const [creating, setCreating] = useState(false);
 
   const svgRef = useRef<SVGSVGElement | null>(null);
@@ -73,15 +74,18 @@ export function FormationEditor({
     setCreating(true);
     setError("");
     try {
+      const personnelId = newSide === "offense" && newCount === 11 ? newPersonnel : undefined;
+      const pkg = personnelId ? PERSONNEL_11.find((p) => p.id === personnelId) : undefined;
+      const defaultName = pkg
+        ? `${pkg.label} (${pkg.description})`
+        : `${newSide === "offense" ? "Offense" : "Defense"} ${newCount}`;
       const f: Formation = {
         id: crypto.randomUUID(),
         teamId: "",
-        name:
-          newName.trim() ||
-          `${newSide === "offense" ? "Offense" : "Defense"} ${newCount}`,
+        name: newName.trim() || defaultName,
         side: newSide,
         playerCount: newCount,
-        players: templatePlayers(newSide, newCount),
+        players: templatePlayers(newSide, newCount, personnelId),
         createdAt: new Date().toISOString(),
       };
       const { formation: saved } = await rpc<{ formation: Formation }>(
@@ -152,7 +156,7 @@ export function FormationEditor({
           ))}
         </div>
         <label className="mb-1 block text-sm text-neutral-400">Players per side</label>
-        <div className="mb-6 grid grid-cols-2 gap-2">
+        <div className="mb-4 grid grid-cols-2 gap-2">
           {PLAYER_COUNTS.map((c) => (
             <button
               key={c}
@@ -163,6 +167,24 @@ export function FormationEditor({
             </button>
           ))}
         </div>
+        {newSide === "offense" && newCount === 11 && (
+          <>
+            <label className="mb-1 block text-sm text-neutral-400">Personnel package</label>
+            <div className="mb-6 grid grid-cols-1 gap-1.5">
+              {PERSONNEL_11.map((pkg) => (
+                <button
+                  key={pkg.id}
+                  onClick={() => setNewPersonnel(pkg.id)}
+                  className={`${btnGhost} text-left ${newPersonnel === pkg.id ? "ring-2 ring-amber-500" : ""}`}
+                >
+                  <span className="font-bold">{pkg.label}</span>
+                  <span className="ml-2 text-neutral-400">{pkg.description}</span>
+                </button>
+              ))}
+            </div>
+          </>
+        )}
+        {(newSide === "defense" || newCount !== 11) && <div className="mb-2" />}
         {error && <p className="mb-3 text-sm text-rose-400">{error}</p>}
         <button className={`${btnPrimary} w-full`} onClick={create} disabled={creating}>
           {creating ? "Creating…" : "Create & place players"}
